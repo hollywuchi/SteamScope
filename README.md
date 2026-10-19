@@ -34,27 +34,27 @@
 ```mermaid
 flowchart TD
     subgraph DataCollection["01. 数据采集与流式管道"]
-        S[Steam Web API / Store] -->|速率控制 / 断点续采| C1[get_appids.py]
-        C1 -->|appids.json| C2[get_details.py]
-        C2 -->|原始 CSV / 断点记录| RAW[(steam_games.csv)]
+        S["Steam Web API / Store"] -->|速率控制 / 断点续采| C1["get_appids.py"]
+        C1 -->|appids.json| C2["get_details.py"]
+        C2 -->|原始 CSV / 断点记录| RAW[("steam_games.csv")]
     end
 
     subgraph DataETL["02. 数据清洗与质量治理"]
-        RAW --> D[data_clean.py]
-        D -->|去重 / 类型强转 / 文本处理| CLEAN[(steam_games_clean.csv)]
-        D -->|算存分离入库| MYSQL[(Azure Database for MySQL)]
+        RAW --> D["data_clean.py"]
+        D -->|去重 / 类型强转 / 文本处理| CLEAN[("steam_games_clean.csv")]
+        D -->|算存分离入库| MYSQL[("Azure Database for MySQL")]
     end
 
     subgraph AnalysisEngine["03. 统计分析与服务层"]
-        CLEAN --> A[analysis.py]
-        A -->|统计指标摘要| JSON[(analysis_summary.json)]
-        MYSQL -.->|实时查询| APP[app.py (Flask RESTful API)]
+        CLEAN --> A["analysis.py"]
+        A -->|统计指标摘要| JSON[("analysis_summary.json")]
+        MYSQL -.->|实时查询| APP["app.py (Flask RESTful API)"]
         JSON -.->|本地文件容灾降级| APP
     end
 
     subgraph Presentation["04. 边缘可视化展示层"]
-        APP -->|HTTPS / JSON API| CF[Cloudflare Pages 全球 CDN]
-        CF --> UI[前端可视化监控看板<br/>Vue / ECharts / Tailwind]
+        APP -->|HTTPS / JSON API| CF["Cloudflare Pages 全球 CDN"]
+        CF --> UI["前端可视化监控看板<br/>Vue / ECharts / Tailwind"]
     end
 ```
 
