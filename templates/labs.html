@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steam Gaming Lab | Google Labs 灵动有机设计系统</title>
+    <!-- Web 字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Vue 3 & ECharts 5 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        :root {
+            /* Google Labs 经典暖奶油色纸本质感 */
+            --bg-canvas: #F6F4EE;
+            --surface-card: #FFFFFF;
+            --surface-subtle: #ECE9DF;
+            --surface-container: #F1EFE7;
+            --border-light: rgba(0, 0, 0, 0.06);
+            --border-hover: rgba(0, 0, 0, 0.12);
+            
+            /* Google Labs 标志性多巴胺有机配色 */
+            --google-blue: #4285F4;
+            --google-green: #34A853;
+            --google-yellow: #FBBC04;
+            --google-red: #EA4335;
+            --google-pink: #F472B6;
+            --google-purple: #8B5CF6;
+            --google-orange: #FB923C;
+
+            --text-title: #18191B;
+            --text-body: #4A4D52;
+            --text-muted: #7E8289;
+
+            --radius-pill: 9999px;
+            --radius-card: 32px;
+            --radius-inner: 22px;
+            --font-main: 'Plus Jakarta Sans', system-ui, sans-serif;
+            --font-display: 'Space Grotesk', system-ui, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-title);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* ======================================================== */
+        /* 灵动多巴胺背景有机色块 (Organic Floating Blobs)           */
+        /* ======================================================== */
+        .blobs-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .blob {
+            position: absolute;
+            filter: blur(50px);
+            opacity: 0.85;
+            mix-blend-mode: multiply;
+            transition: all 1.2s ease-in-out;
+            border-radius: 50%;
+        }
+
+        .blob-1 {
+            top: -120px;
+            left: -80px;
+            width: 480px;
+            height: 480px;
+            background: #FCD34D; /* 暖阳黄 */
+            animation: float-1 18s infinite alternate ease-in-out;
+        }
+
+        .blob-2 {
+            top: -100px;
+            right: -100px;
+            width: 520px;
+            height: 520px;
+            background: #60A5FA; /* 天青蓝 */
+            animation: float-2 22s infinite alternate ease-in-out;
+        }
+
+        .blob-3 {
+            bottom: -150px;
+            left: -120px;
+            width: 560px;
+            height: 560px;
+            background: #F472B6; /* 樱花粉 */
+            animation: float-3 20s infinite alternate ease-in-out;
+        }
+
+        .blob-4 {
+            bottom: -100px;
+            right: 15%;
+            width: 500px;
+            height: 500px;
+            background: #4ADE80; /* 薄荷绿 */
+            animation: float-4 16s infinite alternate ease-in-out;
+        }
+
+        @keyframes float-1 {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(60px, 80px) scale(1.15); }
+        }
+        @keyframes float-2 {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-80px, 90px) scale(0.9); }
+        }
+        @keyframes float-3 {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(90px, -60px) scale(1.1); }
+        }
+        @keyframes float-4 {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-50px, -80px) scale(1.2); }
+        }
+
+        /* 布局容器 */
+        .app-shell {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 32px 80px;
+        }
+
+        /* ======================================================== */
+        /* Google Labs 极简顶部导航 (Clean Capsule Nav)             */
+        /* ======================================================== */
+        .labs-navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 48px;
+            padding: 12px 0;
+        }
+
+        .brand-cluster {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-title);
+            cursor: pointer;
+        }
+
+        .flask-icon {
+            font-size: 24px;
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+
+        .brand-cluster:hover .flask-icon {
+            transform: rotate(-12deg) scale(1.15);
+        }
+
+        .brand-title {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-links-pill {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-pill);
+            padding: 6px 8px;
+            gap: 6px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        .nav-pill-btn {
+            padding: 8px 22px;
+            border-radius: var(--radius-pill);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-body);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+        }
+
+        .nav-pill-btn:hover {
+            color: var(--text-title);
+            background: rgba(0, 0, 0, 0.04);
+        }
+
+        .nav-pill-btn.active {
+            color: #FFFFFF;
+            background: #18191B;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .nav-right-cluster {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .circle-social-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-title);
+            font-size: 15px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.25s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .circle-social-btn:hover {
+            background: #FFFFFF;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+        }
+
+        .theme-toggle-pill {
+            padding: 8px 18px;
+            border-radius: var(--radius-pill);
+            background: #18191B;
+            color: #FFFFFF;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .theme-toggle-pill:hover {
+            background: #2D3036;
+            transform: translateY(-2px);
+        }
+
+        /* ======================================================== */
+        /* Google Labs 灵动主视觉 (Hero Section with Highlights)    */
+        /* ======================================================== */
+        .labs-hero {
+            text-align: center;
+            padding: 20px 20px 60px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        .hero-headline {
+            font-family: var(--font-display);
+            font-size: clamp(38px, 6vw, 68px);
+            font-weight: 800;
+            line-height: 1.08;
+            letter-spacing: -0.03em;
+            color: var(--text-title);
+            margin-bottom: 24px;
+        }
+
+        /* 谷歌式彩色单词强调高亮 */
+        .highlight-magenta {
+            color: #D946EF;
+            position: relative;
+            display: inline-block;
+        }
+
+        .highlight-emerald {
+            color: #059669;
+            position: relative;
+            display: inline-block;
+        }
+
+        .highlight-blue {
+            color: #2563EB;
+            position: relative;
+            display: inline-block;
+        }
+
+        .hero-subtext {
+            font-size: 18px;
+            color: var(--text-body);
+            line-height: 1.6;
+            max-width: 680px;
+            margin: 0 auto 36px;
+            font-weight: 500;
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .pill-btn-solid {
+            padding: 14px 32px;
+            border-radius: var(--radius-pill);
+            background: #18191B;
+            color: #FFFFFF;
+            font-size: 15px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pill-btn-solid:hover {
+            background: #31353C;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+        }
+
+        .pill-btn-soft {
+            padding: 14px 28px;
+            border-radius: var(--radius-pill);
+            background: var(--surface-subtle);
+            color: var(--text-title);
+            font-size: 15px;
+            font-weight: 600;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: all 0.25s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pill-btn-soft:hover {
+            background: #E4DFD3;
+            transform: translateY(-2px);
+        }
+
+        /* ======================================================== */
+        /* Google Labs 标志性纯白悬浮大圆角卡片                     */
+        /* ======================================================== */
+        .labs-card-white {
+            background: var(--surface-card);
+            border-radius: var(--radius-card);
+            padding: 32px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.01);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .labs-card-white:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.02);
+            border-color: var(--border-hover);
+        }
+
+        .card-inner-box {
+            background: var(--surface-container);
+            border-radius: var(--radius-inner);
+            padding: 20px;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .card-inner-box.tint-blue { background: #EEF4FE; }
+        .card-inner-box.tint-green { background: #EBF8F1; }
+        .card-inner-box.tint-purple { background: #F3EFFF; }
+        .card-inner-box.tint-amber { background: #FEF9EB; }
+        .card-inner-box.tint-pink { background: #FDF2F8; }
+
+        .chart-box-std {
+            width: 100%;
+            height: 360px;
+        }
+
+        .chart-box-tall {
+            width: 100%;
+            height: 480px;
+        }
+
+        .card-footer-info h4 {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-title);
+            margin-bottom: 8px;
+        }
+
+        .card-footer-info p {
+            font-size: 14.5px;
+            color: var(--text-body);
+            line-height: 1.6;
+        }
+
+        .grid-2col {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 28px;
+            margin-bottom: 32px;
+        }
+
+        .grid-3col {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 28px;
+            margin-bottom: 32px;
+        }
+
+        /* KPI Micro-Badges Row */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+            margin-bottom: 36px;
+        }
+
+        .kpi-pill-card {
+            background: #FFFFFF;
+            border-radius: 24px;
+            padding: 18px 20px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+            transition: all 0.25s;
+        }
+
+        .kpi-pill-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+        }
+
+        .kpi-pill-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .kpi-pill-value {
+            font-family: var(--font-display);
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-title);
+        }
+
+        .kpi-pill-sub {
+            font-size: 12px;
+            color: var(--text-body);
+            margin-top: 4px;
+        }
+
+        /* ======================================================== */
+        /* Explorer (游戏检索器) Labs 风格设计                      */
+        /* ======================================================== */
+        .labs-filter-bar {
+            background: #FFFFFF;
+            border-radius: var(--radius-pill);
+            padding: 10px 16px 10px 24px;
+            border: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.03);
+            margin-bottom: 24px;
+        }
+
+        .labs-search-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 15px;
+            font-family: var(--font-main);
+            color: var(--text-title);
+            background: transparent;
+        }
+
+        .labs-search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .labs-select {
+            background: var(--surface-container);
+            border: none;
+            padding: 10px 18px;
+            border-radius: var(--radius-pill);
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-body);
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .labs-select:hover {
+            background: var(--surface-subtle);
+            color: var(--text-title);
+        }
+
+        .genre-pill-scroll {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            margin-bottom: 24px;
+            scrollbar-width: none;
+        }
+
+        .genre-pill-btn {
+            padding: 8px 18px;
+            border-radius: var(--radius-pill);
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            background: #FFFFFF;
+            border: 1px solid var(--border-light);
+            color: var(--text-body);
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.01);
+        }
+
+        .genre-pill-btn:hover {
+            background: var(--surface-container);
+            color: var(--text-title);
+        }
+
+        .genre-pill-btn.active {
+            background: #18191B;
+            color: #FFFFFF;
+            border-color: #18191B;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+
+        /* 游戏数据卡片式表格 */
+        .labs-table-clean {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .labs-table-clean th {
+            padding: 14px 20px;
+            font-size: 12.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            text-align: left;
+            border-bottom: 1.5px solid var(--border-light);
+        }
+
+        .labs-table-clean td {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+            font-size: 14px;
+            vertical-align: middle;
+            background: #FFFFFF;
+            transition: background 0.2s;
+        }
+
+        .labs-table-clean tr:hover td {
+            background: #FAF8F2;
+        }
+
+        .tag-pill-pastel {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 11.5px;
+            font-weight: 600;
+            background: var(--surface-container);
+            color: var(--text-body);
+            margin-right: 6px;
+            margin-bottom: 4px;
+        }
+
+        /* ======================================================== */
+        /* Google Labs 灵动几何玩具插图区 (Playful Toy Shapes)      */
+        /* ======================================================== */
+        .toys-gallery {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 60px 0 20px;
+            flex-wrap: wrap;
+        }
+
+        .toy-shape {
+            width: 90px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            user-select: none;
+        }
+
+        .toy-shape:hover {
+            transform: scale(1.18) rotate(10deg);
+        }
+
+        .shape-hexagon {
+            background: var(--google-orange);
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+        }
+
+        .shape-circle {
+            background: var(--google-blue);
+            border-radius: 50%;
+        }
+
+        .shape-clover {
+            background: var(--google-yellow);
+            border-radius: 28px;
+        }
+
+        .shape-pill-vert {
+            background: var(--google-green);
+            border-radius: 45px;
+            height: 100px;
+        }
+
+        .shape-heart-flower {
+            background: var(--google-pink);
+            border-radius: 50% 50% 50% 10%;
+        }
+
+        /* Modal Dialog (Labs Clean White Modal) */
+        .labs-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(24, 25, 27, 0.4);
+            backdrop-filter: blur(12px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .labs-modal-card {
+            background: #FFFFFF;
+            border-radius: 36px;
+            max-width: 680px;
+            width: 100%;
+            padding: 40px;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.12);
+            position: relative;
+            animation: modal-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modal-enter {
+            from { transform: scale(0.92); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-row {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            font-size: 14px;
+        }
+
+        .modal-label {
+            width: 120px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .modal-val {
+            flex: 1;
+            font-weight: 600;
+            color: var(--text-title);
+        }
+
+        /* 响应式断点 */
+        @media (max-width: 1100px) {
+            .grid-2col, .grid-3col { grid-template-columns: 1fr; }
+            .kpi-row { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .labs-navbar { flex-direction: column; gap: 16px; }
+            .nav-links-pill { width: 100%; justify-content: space-around; overflow-x: auto; }
+            .hero-headline { font-size: 38px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 灵动背景多巴胺动态有机浮斑 -->
+        <div class="blobs-wrapper">
+            <div class="blob blob-1"></div>
+            <div class="blob blob-2"></div>
+            <div class="blob blob-3"></div>
+            <div class="blob blob-4"></div>
+        </div>
+
+        <div class="app-shell">
+            <!-- 极简 Google Labs 顶部导航条 -->
+            <header class="labs-navbar">
+                <div class="brand-cluster" @click="currentTab = 'overview'">
+                    <span class="flask-icon">🧪</span>
+                    <span class="brand-title">Steam Labs</span>
+                </div>
+
+                <nav class="nav-links-pill">
+                    <button class="nav-pill-btn" :class="{ active: currentTab === 'overview' }" @click="switchTab('overview')">
+                        Experiments 探索
+                    </button>
+                    <button class="nav-pill-btn" :class="{ active: currentTab === 'correlations' }" @click="switchTab('correlations')">
+                        Insights 关联
+                    </button>
+                    <button class="nav-pill-btn" :class="{ active: currentTab === 'explorer' }" @click="switchTab('explorer')">
+                        Explorer 检索
+                    </button>
+                    <button class="nav-pill-btn" :class="{ active: currentTab === 'cloud' }" @click="switchTab('cloud')">
+                        Cloud Ops 云端
+                    </button>
+                </nav>
+
+                <div class="nav-right-cluster">
+                    <a href="/" class="theme-toggle-pill" title="切换至深色极客控制台">
+                        <span>🌙 深色控制台</span>
+                    </a>
+                    <a href="https://store.steampowered.com" target="_blank" class="circle-social-btn" title="Steam 官网">
+                        🎮
+                    </a>
+                    <button class="circle-social-btn" @click="refreshData" title="刷新全量数据">
+                        ↻
+                    </button>
+                </div>
+            </header>
+
+            <!-- Google Labs 灵动主视觉标语区 (Hero) -->
+            <section class="labs-hero" v-if="currentTab === 'overview'">
+                <h2 class="hero-headline">
+                    Be the first to <span class="highlight-magenta">experiment</span> with the steam gaming <span class="highlight-emerald">market</span>.
+                </h2>
+                <p class="hero-subtext">
+                    基于 Steam Web API 的多维度游戏数据挖掘、商业属性剖析与多维关联特征透视。灵动设计，探索无限。
+                </p>
+                <div class="hero-actions">
+                    <button class="pill-btn-solid" @click="switchTab('explorer')">
+                        <span>探索清洗后数据集 ({{ overview?.total_games || 35 }} 款)</span>
+                        <span>→</span>
+                    </button>
+                    <button class="pill-btn-soft" @click="switchTab('correlations')">
+                        <span>查看多维透视矩阵</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Google Labs 风格 KPI 微型卡片组 -->
+            <section class="kpi-row">
+                <div class="kpi-pill-card">
+                    <div class="kpi-pill-label">Total Games</div>
+                    <div class="kpi-pill-value">{{ overview?.total_games || 0 }}</div>
+                    <div class="kpi-pill-sub">有效清洗样本</div>
+                </div>
+
+                <div class="kpi-pill-card">
+                    <div class="kpi-pill-label">Free Ratio</div>
+                    <div class="kpi-pill-value" style="color:#059669;">{{ overview?.free_ratio || 0 }}%</div>
+                    <div class="kpi-pill-sub">{{ overview?.free_count || 0 }} 款免费游戏</div>
+                </div>
+
+                <div class="kpi-pill-card">
+                    <div class="kpi-pill-label">Average Price</div>
+                    <div class="kpi-pill-value" style="color:#2563EB;">¥{{ overview?.price_stats?.mean_price || 0 }}</div>
+                    <div class="kpi-pill-sub">中位数: ¥{{ overview?.price_stats?.median_price || 0 }}</div>
+                </div>
+
+                <div class="kpi-pill-card">
+                    <div class="kpi-pill-label">Discount Rate</div>
+                    <div class="kpi-pill-value" style="color:#D946EF;">{{ overview?.discount_summary?.discount_rate || 0 }}%</div>
+                    <div class="kpi-pill-sub">{{ overview?.discount_summary?.discounted_games || 0 }} 款享受特惠</div>
+                </div>
+
+                <div class="kpi-pill-card">
+                    <div class="kpi-pill-label">Top Genre</div>
+                    <div class="kpi-pill-value" style="font-size:22px; color:#D97706;">{{ overview?.top_genre || 'Indie' }}</div>
+                    <div class="kpi-pill-sub">平台最热门品类</div>
+                </div>
+
+                <div class="kpi-pill-card">
+                    <div class="kpi-pill-label">MySQL Cloud</div>
+                    <div class="kpi-pill-value" style="font-size:20px; color:#059669;">
+                        {{ systemStatus?.mysql?.connected ? 'ONLINE' : 'FALLBACK' }}
+                    </div>
+                    <div class="kpi-pill-sub">20.48.117.195</div>
+                </div>
+            </section>
+
+            <!-- ========================================================= -->
+            <!-- 模块 1：Experiments 探索大屏                              -->
+            <!-- ========================================================= -->
+            <main v-show="currentTab === 'overview'">
+                <div class="grid-2col">
+                    <!-- 8.1 年度发行走势 -->
+                    <div class="labs-card-white">
+                        <div class="card-inner-box tint-blue">
+                            <div id="chart-labs-year" class="chart-box-std"></div>
+                        </div>
+                        <div class="card-footer-info">
+                            <h4>8.1 市场年度发行走势 (Annual Release Trend)</h4>
+                            <p>统计近 3 年各年份游戏发行总量，观察 Steam 平台游戏供给速度与生命周期趋势变化。</p>
+                        </div>
+                    </div>
+
+                    <!-- 8.2 热门类型分布 -->
+                    <div class="labs-card-white">
+                        <div class="card-inner-box tint-green">
+                            <div id="chart-labs-genres" class="chart-box-std"></div>
+                        </div>
+                        <div class="card-footer-info">
+                            <h4>8.2 热门游戏类型分布 TOP 10 (Genre Popularity)</h4>
+                            <p>拆分单款游戏的多重类型标签，统计独立、动作、角色扮演等主流品类的市场渗透率。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-3col">
+                    <!-- 8.3 免费 vs 付费占比 -->
+                    <div class="labs-card-white">
+                        <div class="card-inner-box tint-purple">
+                            <div id="chart-labs-pie-free" class="chart-box-std"></div>
+                        </div>
+                        <div class="card-footer-info">
+                            <h4>8.3 商业属性占比</h4>
+                            <p>免费游玩（F2P）与买断制付费游戏比例。</p>
+                        </div>
+                    </div>
+
+                    <!-- 8.3 操作系统平台占比 -->
+                    <div class="labs-card-white">
+                        <div class="card-inner-box tint-amber">
+                            <div id="chart-labs-pie-plat" class="chart-box-std"></div>
+                        </div>
+                        <div class="card-footer-info">
+                            <h4>8.3 操作系统兼容度</h4>
+                            <p>Windows、macOS 与 Linux 系统支持分布。</p>
+                        </div>
+                    </div>
+
+                    <!-- 8.4 价格区间分布 -->
+                    <div class="labs-card-white">
+                        <div class="card-inner-box tint-pink">
+                            <div id="chart-labs-price-dist" class="chart-box-std"></div>
+                        </div>
+                        <div class="card-footer-info">
+                            <h4>8.4 价格梯度分布</h4>
+                            <p>从小品独立到 3A 旗舰游戏的售价阶梯。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 活跃开发商与发行商 -->
+                <div class="grid-2col">
+                    <div class="labs-card-white">
+                        <div class="card-inner-box tint-blue">
+                            <div id="chart-labs-devs" class="chart-box-std"></div>
+                        </div>
+                        <div class="card-footer-info">
+                            <h4>6.6 活跃开发商排行榜 TOP 10</h4>
+                            <p>分析在近 3 年发行产品最多的开发团队分布与集中度。</p>
+                        </div>
+                    </div>
+
+                    <div class="labs-card-white">
+                        <div class="card-inner-box tint-green">
+                            <div id="chart-labs-pubs" class="chart-box-std"></div>
+                        </div>
+                        <div class="card-footer-info">
+                            <h4>6.7 活跃发行商排行榜 TOP 10</h4>
+                            <p>展现发行商在独立游戏与商业游戏发行上的主导力量。</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- ========================================================= -->
+            <!-- 模块 2：Insights 关联透视                                  -->
+            <!-- ========================================================= -->
+            <main v-show="currentTab === 'correlations'">
+                <div class="grid-2col">
+                    <!-- 7.1 类型 × 价格水平 -->
+                    <div class="labs-card-white">
+                        <div class="card-inner-box tint-amber">
+                            <div id="chart-labs-corr-price" class="chart-box-tall"></div>
+                        </div>
+                        <div class="card-footer-info">
+                            <h4>7.1 游戏类型与价格水平 (Genre × Price)</h4>
+                            <p>比较不同类型游戏的平均定价与中位定价差异，揭示各类游戏的研发预算与商业溢价。</p>
+                        </div>
+                    </div>
+
+                    <!-- 7.2 类型 × 折扣力度 -->
+                    <div class="labs-card-white">
+                        <div class="card-inner-box tint-purple">
+                            <div id="chart-labs-corr-discount" class="chart-box-tall"></div>
+                        </div>
+                        <div class="card-footer-info">
+                            <h4>7.2 游戏类型与折扣特征 (Genre × Discount)</h4>
+                            <p>统计各大类型的打折促销积极度以及平均折让幅度，观察促销敏感度。</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7.6 类型共现热力矩阵 -->
+                <div class="labs-card-white" style="margin-bottom: 32px;">
+                    <div class="card-inner-box tint-blue">
+                        <div id="chart-labs-corr-heatmap" style="width: 100%; height: 500px;"></div>
+                    </div>
+                    <div class="card-footer-info">
+                        <h4>7.6 游戏类型共现热力矩阵 (Genre × Genre Co-occurrence Matrix)</h4>
+                        <p>分析多重类型在同一款游戏中的复合搭配规律（如动作+冒险、策略+模拟），量化品类融合潮流。</p>
+                    </div>
+                </div>
+
+                <!-- 7.3 平台支持率对比 -->
+                <div class="labs-card-white">
+                    <div class="card-inner-box tint-green">
+                        <div id="chart-labs-corr-platform" class="chart-box-std"></div>
+                    </div>
+                    <div class="card-footer-info">
+                        <h4>7.3 各游戏类型跨平台支持率 (macOS / Linux 适配对比)</h4>
+                        <p>对比不同类型对苹果与开源操作系统的技术适配倾向。</p>
+                    </div>
+                </div>
+            </main>
+
+            <!-- ========================================================= -->
+            <!-- 模块 3：Explorer 游戏检索器                                -->
+            <!-- ========================================================= -->
+            <main v-show="currentTab === 'explorer'">
+                <!-- Google Labs 极简白搜索过滤条 -->
+                <div class="labs-filter-bar">
+                    <span style="font-size:18px;">🔍</span>
+                    <input 
+                        type="text" 
+                        class="labs-search-input" 
+                        v-model="filters.keyword" 
+                        placeholder="搜索感兴趣的 Steam 游戏名、研发团队或发行品牌..."
+                        @keyup.enter="handleSearch"
+                    >
+                    <select class="labs-select" v-model="filters.is_free" @change="handleSearch">
+                        <option value="">全部模式</option>
+                        <option value="1">只看免费</option>
+                        <option value="0">只看付费</option>
+                    </select>
+                    <select class="labs-select" v-model="filters.sort_by" @change="handleSearch">
+                        <option value="appid">按 AppID 排序</option>
+                        <option value="final_price">按现价排序</option>
+                        <option value="discount_percent">按折扣排序</option>
+                    </select>
+                    <button class="pill-btn-solid" style="padding:10px 24px; font-size:13.5px;" @click="handleSearch">
+                        搜索
+                    </button>
+                </div>
+
+                <!-- 快捷类型胶囊 Pills 滑动条 -->
+                <div class="genre-pill-scroll">
+                    <button 
+                        class="genre-pill-btn" 
+                        :class="{ active: filters.genre === '' }"
+                        @click="selectGenre('')"
+                    >
+                        全部类型
+                    </button>
+                    <button 
+                        v-for="g in quickGenres" 
+                        :key="g"
+                        class="genre-pill-btn" 
+                        :class="{ active: filters.genre === g }"
+                        @click="selectGenre(g)"
+                    >
+                        {{ g }}
+                    </button>
+                </div>
+
+                <!-- 纯白卡片数据表格 -->
+                <div class="labs-card-white" style="padding: 24px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h4 style="font-family:var(--font-display); font-size:18px; font-weight:700;">
+                            数据集清洗样本检索 ({{ gameList.total }} 款)
+                        </h4>
+                        <span style="font-size:13px; color:var(--text-muted);">
+                            显示第 {{ (filters.page - 1) * filters.page_size + 1 }} ~ {{ Math.min(filters.page * filters.page_size, gameList.total) }} 条
+                        </span>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table class="labs-table-clean">
+                            <thead>
+                                <tr>
+                                    <th>AppID</th>
+                                    <th>游戏信息</th>
+                                    <th>开发 / 发行</th>
+                                    <th>品类标签</th>
+                                    <th>售价</th>
+                                    <th style="text-align: right;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="game in gameList.items" :key="game.appid">
+                                    <td>
+                                        <a :href="'https://store.steampowered.com/app/' + game.appid" target="_blank" style="font-weight:700; color:var(--google-blue); text-decoration:none;">
+                                            #{{ game.appid }} ↗
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight:700; color:var(--text-title);">{{ game.name }}</div>
+                                        <div style="font-size:12px; color:var(--text-muted);">{{ game.release_date || '未知日期' }}</div>
+                                    </td>
+                                    <td>
+                                        <div style="font-size:13px; color:var(--text-body);">
+                                            <div>研: {{ game.developers || '暂无' }}</div>
+                                            <div>发: {{ game.publishers || '暂无' }}</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <span 
+                                                v-for="genre in (game.genres ? game.genres.split(';').slice(0, 3) : [])" 
+                                                :key="genre"
+                                                class="tag-pill-pastel"
+                                            >
+                                                {{ genre.trim() }}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <span v-if="game.is_free" style="font-weight:700; color:#059669;">免费</span>
+                                            <span v-else style="font-weight:700;">
+                                                ¥{{ game.final_price }}
+                                                <span v-if="game.discount_percent > 0" style="font-size:11px; color:#EA4335; margin-left:4px;">
+                                                    -{{ game.discount_percent }}%
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <button class="pill-btn-soft" style="padding:6px 14px; font-size:12px;" @click="selectedGame = game">
+                                            详情
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分页条 -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:24px;">
+                        <span style="font-size:13px; color:var(--text-muted);">共 {{ gameList.total_pages }} 页</span>
+                        <div style="display:flex; gap:8px;">
+                            <button 
+                                class="pill-btn-soft" 
+                                style="padding:6px 16px; font-size:13px;"
+                                :disabled="filters.page <= 1"
+                                @click="changePage(filters.page - 1)"
+                            >
+                                ← 上一页
+                            </button>
+                            <span class="pill-btn-soft" style="padding:6px 16px; font-size:13px; background:#18191B; color:#FFFFFF;">
+                                第 {{ filters.page }} 页
+                            </span>
+                            <button 
+                                class="pill-btn-soft" 
+                                style="padding:6px 16px; font-size:13px;"
+                                :disabled="filters.page >= gameList.total_pages"
+                                @click="changePage(filters.page + 1)"
+                            >
+                                下一页 →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- ========================================================= -->
+            <!-- 模块 4：Cloud Ops 云端状态与同步控制                      -->
+            <!-- ========================================================= -->
+            <main v-show="currentTab === 'cloud'">
+                <div class="grid-2col">
+                    <div class="labs-card-white">
+                        <div class="card-footer-info" style="margin-bottom: 20px;">
+                            <h4>云端 MySQL 数据库 (1Panel / 挂机端)</h4>
+                            <p>服务器直连: {{ systemStatus?.mysql?.host }}:{{ systemStatus?.mysql?.port }}</p>
+                        </div>
+                        <div class="modal-row">
+                            <span class="modal-label">连接状态</span>
+                            <span class="modal-val" style="color:#059669;">
+                                {{ systemStatus?.mysql?.connected ? '● 正常连接 (ONLINE)' : '○ 未连接' }}
+                            </span>
+                        </div>
+                        <div class="modal-row">
+                            <span class="modal-label">数据库</span>
+                            <span class="modal-val">{{ systemStatus?.mysql?.database }}</span>
+                        </div>
+                        <div class="modal-row">
+                            <span class="modal-label">数据表</span>
+                            <span class="modal-val">{{ systemStatus?.mysql?.table }}</span>
+                        </div>
+                        <div class="modal-row">
+                            <span class="modal-label">已入库记录</span>
+                            <span class="modal-val" style="color:var(--google-blue); font-size:18px;">
+                                {{ systemStatus?.mysql?.records_in_table }} 条
+                            </span>
+                        </div>
+                        <div style="margin-top: 24px;">
+                            <button class="pill-btn-solid" :disabled="syncing" @click="syncToDb">
+                                <span>{{ syncing ? '正在同步中...' : '一键将本地清洗数据同步至 MySQL' }}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="labs-card-white">
+                        <div class="card-footer-info" style="margin-bottom: 20px;">
+                            <h4>本地容灾与高可用架构</h4>
+                            <p>当网络中断或答辩离线环境时自动降级生效</p>
+                        </div>
+                        <div class="modal-row">
+                            <span class="modal-label">运行模式</span>
+                            <span class="modal-val">{{ systemStatus?.active_mode === 'mysql' ? 'MySQL 直连优先' : '本地文件容灾' }}</span>
+                        </div>
+                        <div class="modal-row">
+                            <span class="modal-label">本地 CSV</span>
+                            <span class="modal-val">{{ systemStatus?.local_storage?.csv_file }}</span>
+                        </div>
+                        <div class="modal-row">
+                            <span class="modal-label">本地记录</span>
+                            <span class="modal-val">{{ systemStatus?.local_storage?.csv_records }} 条</span>
+                        </div>
+                        <div class="modal-row">
+                            <span class="modal-label">最后活跃</span>
+                            <span class="modal-val">{{ systemStatus?.timestamp }}</span>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 页面底部 Google Labs 标志性几何玩具插画 (Playful Shapes) -->
+            <section class="toys-gallery">
+                <div class="toy-shape shape-hexagon" title="Steam Analytics"></div>
+                <div class="toy-shape shape-circle" title="Data Visuals"></div>
+                <div class="toy-shape shape-clover" title="Market Research"></div>
+                <div class="toy-shape shape-pill-vert" title="Flask Backend"></div>
+                <div class="toy-shape shape-heart-flower" title="Google Labs Aesthetic"></div>
+            </section>
+        </div>
+
+        <!-- 单个游戏详情弹窗 (Labs Clean Modal) -->
+        <div class="labs-modal-backdrop" v-if="selectedGame" @click.self="selectedGame = null">
+            <div class="labs-modal-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="font-family:var(--font-display); font-size:24px; font-weight:800;">{{ selectedGame.name }}</h3>
+                    <button class="circle-social-btn" @click="selectedGame = null">✕</button>
+                </div>
+                <div class="modal-row">
+                    <span class="modal-label">AppID</span>
+                    <span class="modal-val">#{{ selectedGame.appid }}</span>
+                </div>
+                <div class="modal-row">
+                    <span class="modal-label">发售时间</span>
+                    <span class="modal-val">{{ selectedGame.release_date || '未知' }}</span>
+                </div>
+                <div class="modal-row">
+                    <span class="modal-label">研发团队</span>
+                    <span class="modal-val">{{ selectedGame.developers || '暂无数据' }}</span>
+                </div>
+                <div class="modal-row">
+                    <span class="modal-label">发行商</span>
+                    <span class="modal-val">{{ selectedGame.publishers || '暂无数据' }}</span>
+                </div>
+                <div class="modal-row">
+                    <span class="modal-label">游戏类型</span>
+                    <span class="modal-val">
+                        <span v-for="g in (selectedGame.genres ? selectedGame.genres.split(';') : [])" :key="g" class="tag-pill-pastel">
+                            {{ g.trim() }}
+                        </span>
+                    </span>
+                </div>
+                <div class="modal-row">
+                    <span class="modal-label">售价与折扣</span>
+                    <span class="modal-val">
+                        <span v-if="selectedGame.is_free" style="color:#059669; font-weight:700;">免费游玩</span>
+                        <span v-else>
+                            ¥{{ selectedGame.final_price }} (原价: ¥{{ selectedGame.initial_price }})
+                            <span v-if="selectedGame.discount_percent > 0" style="color:#EA4335; margin-left:6px;">-{{ selectedGame.discount_percent }}%</span>
+                        </span>
+                    </span>
+                </div>
+                <div style="margin-top:28px; text-align:right;">
+                    <a :href="'https://store.steampowered.com/app/' + selectedGame.appid" target="_blank" class="pill-btn-solid" style="text-decoration:none;">
+                        前往 Steam 商店主页 ↗
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vue 3 与 ECharts 逻辑 (Google Labs 浅色图表主题) -->
+    <script>
+        const { createApp, ref, onMounted, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                const currentTab = ref('overview');
+                const systemStatus = ref(null);
+                const overview = ref(null);
+                const syncing = ref(false);
+                const selectedGame = ref(null);
+
+                const filters = ref({
+                    keyword: '',
+                    genre: '',
+                    is_free: '',
+                    sort_by: 'appid',
+                    order: 'desc',
+                    page: 1,
+                    page_size: 10
+                });
+
+                const gameList = ref({ total: 0, page: 1, page_size: 10, total_pages: 1, items: [] });
+                const quickGenres = ref(['Action', 'Adventure', 'RPG', 'Strategy', 'Simulation', 'Indie', 'Casual']);
+                const chartInstances = {};
+
+                const switchTab = (tab) => {
+                    currentTab.value = tab;
+                    nextTick(() => {
+                        Object.values(chartInstances).forEach(c => c && c.resize());
+                        if (tab === 'correlations') loadCorrelations();
+                    });
+                };
+
+                // Google Labs 标志性浅色图表主题配置
+                const lightChartTheme = {
+                    textStyle: { color: '#5F6368', fontFamily: 'Plus Jakarta Sans, sans-serif' },
+                    splitLine: { lineStyle: { color: 'rgba(0, 0, 0, 0.05)', type: 'dashed' } },
+                    tooltip: {
+                        backgroundColor: '#FFFFFF',
+                        borderColor: 'rgba(0, 0, 0, 0.08)',
+                        borderWidth: 1,
+                        textStyle: { color: '#1F2024' },
+                        shadowBlur: 20,
+                        shadowColor: 'rgba(0, 0, 0, 0.08)'
+                    }
+                };
+
+                const fetchStatus = async () => {
+                    try {
+                        const res = await fetch('/api/system/status');
+                        systemStatus.value = (await res.json()).data;
+                    } catch (e) {}
+                };
+
+                const fetchOverview = async () => {
+                    try {
+                        const res = await fetch('/api/games/overview');
+                        overview.value = (await res.json()).data;
+                    } catch (e) {}
+                };
+
+                const fetchGameList = async () => {
+                    try {
+                        const p = new URLSearchParams(filters.value);
+                        const res = await fetch('/api/games/list?' + p.toString());
+                        gameList.value = (await res.json()).data;
+                    } catch (e) {}
+                };
+
+                const handleSearch = () => {
+                    filters.value.page = 1;
+                    fetchGameList();
+                };
+
+                const selectGenre = (g) => {
+                    filters.value.genre = g;
+                    handleSearch();
+                };
+
+                const changePage = (p) => {
+                    filters.value.page = p;
+                    fetchGameList();
+                };
+
+                const syncToDb = async () => {
+                    syncing.value = true;
+                    try {
+                        await fetch('/api/db/sync', { method: 'POST' });
+                        await fetchStatus();
+                        alert('✦ 数据已成功同步至 MySQL 数据库！');
+                    } catch (e) {
+                        alert('同步异常');
+                    } finally {
+                        syncing.value = false;
+                    }
+                };
+
+                // 加载 Google Labs 风格大屏图表
+                const loadOverviewCharts = async () => {
+                    // 1. 年度发行折线图
+                    try {
+                        const res = await fetch('/api/games/year');
+                        const data = (await res.json()).data || [];
+                        const dom = document.getElementById('chart-labs-year');
+                        if (dom) {
+                            const chart = echarts.init(dom);
+                            chartInstances['year'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...lightChartTheme.tooltip },
+                                grid: { left: '4%', right: '4%', bottom: '8%', containLabel: true },
+                                xAxis: { type: 'category', data: data.map(d => d.year + '年'), axisLabel: lightChartTheme.textStyle },
+                                yAxis: { type: 'value', axisLabel: lightChartTheme.textStyle, splitLine: lightChartTheme.splitLine },
+                                series: [{
+                                    name: '年发行量',
+                                    type: 'line',
+                                    data: data.map(d => d.count),
+                                    smooth: true,
+                                    symbolSize: 8,
+                                    lineStyle: { width: 4, color: '#4285F4' },
+                                    itemStyle: { color: '#4285F4', borderWidth: 2, borderColor: '#FFFFFF' },
+                                    areaStyle: {
+                                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                            { offset: 0, color: 'rgba(66, 133, 244, 0.25)' },
+                                            { offset: 1, color: 'rgba(66, 133, 244, 0.0)' }
+                                        ])
+                                    }
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // 2. 热门类型排行榜
+                    try {
+                        const res = await fetch('/api/games/genres?limit=10');
+                        const data = ((await res.json()).data || []).reverse();
+                        const dom = document.getElementById('chart-labs-genres');
+                        if (dom) {
+                            const chart = echarts.init(dom);
+                            chartInstances['genres'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...lightChartTheme.tooltip },
+                                grid: { left: '4%', right: '8%', bottom: '4%', containLabel: true },
+                                xAxis: { type: 'value', axisLabel: lightChartTheme.textStyle, splitLine: lightChartTheme.splitLine },
+                                yAxis: { type: 'category', data: data.map(d => d.genre), axisLabel: lightChartTheme.textStyle },
+                                series: [{
+                                    name: '游戏款数',
+                                    type: 'bar',
+                                    data: data.map(d => d.count),
+                                    itemStyle: {
+                                        borderRadius: [0, 8, 8, 0],
+                                        color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+                                            { offset: 0, color: '#34A853' },
+                                            { offset: 1, color: '#6EE7B7' }
+                                        ])
+                                    }
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // 3. 免费 vs 付费
+                    try {
+                        const res = await fetch('/api/games/prices');
+                        const data = (await res.json()).data || {};
+                        const dom = document.getElementById('chart-labs-pie-free');
+                        if (dom) {
+                            const chart = echarts.init(dom);
+                            chartInstances['freePie'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'item', ...lightChartTheme.tooltip },
+                                legend: { bottom: '2%', textStyle: lightChartTheme.textStyle },
+                                series: [{
+                                    type: 'pie',
+                                    radius: ['45%', '70%'],
+                                    center: ['50%', '45%'],
+                                    itemStyle: { borderRadius: 8, borderColor: '#FFFFFF', borderWidth: 2 },
+                                    data: [
+                                        { value: data.free_count || 0, name: '免费游戏', itemStyle: { color: '#34A853' } },
+                                        { value: data.paid_count || 0, name: '付费游戏', itemStyle: { color: '#8B5CF6' } }
+                                    ]
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // 4. 平台分布
+                    try {
+                        const res = await fetch('/api/games/platforms');
+                        const data = (await res.json()).data || {};
+                        const dom = document.getElementById('chart-labs-pie-plat');
+                        if (dom) {
+                            const chart = echarts.init(dom);
+                            chartInstances['platPie'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'item', ...lightChartTheme.tooltip },
+                                legend: { bottom: '2%', textStyle: lightChartTheme.textStyle },
+                                series: [{
+                                    type: 'pie',
+                                    roseType: 'radius',
+                                    radius: ['20%', '68%'],
+                                    center: ['50%', '45%'],
+                                    itemStyle: { borderRadius: 6 },
+                                    data: [
+                                        { value: data.windows || 0, name: 'Windows', itemStyle: { color: '#4285F4' } },
+                                        { value: data.mac || 0, name: 'macOS', itemStyle: { color: '#FBBC04' } },
+                                        { value: data.linux || 0, name: 'Linux', itemStyle: { color: '#EA4335' } }
+                                    ]
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // 5. 价格分布
+                    try {
+                        const res = await fetch('/api/games/prices');
+                        const dist = (await res.json()).data?.distribution || [];
+                        const dom = document.getElementById('chart-labs-price-dist');
+                        if (dom) {
+                            const chart = echarts.init(dom);
+                            chartInstances['priceDist'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...lightChartTheme.tooltip },
+                                grid: { left: '4%', right: '4%', bottom: '15%', containLabel: true },
+                                xAxis: {
+                                    type: 'category',
+                                    data: dist.map(d => d.range.split('(')[0]),
+                                    axisLabel: { ...lightChartTheme.textStyle, rotate: 20, interval: 0 }
+                                },
+                                yAxis: { type: 'value', axisLabel: lightChartTheme.textStyle, splitLine: lightChartTheme.splitLine },
+                                series: [{
+                                    type: 'bar',
+                                    data: dist.map(d => d.count),
+                                    itemStyle: { borderRadius: [6, 6, 0, 0], color: '#EC4899' }
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // 6. 开发商 TOP 10
+                    try {
+                        const res = await fetch('/api/games/developers?limit=10');
+                        const data = ((await res.json()).data || []).reverse();
+                        const dom = document.getElementById('chart-labs-devs');
+                        if (dom) {
+                            const chart = echarts.init(dom);
+                            chartInstances['devs'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...lightChartTheme.tooltip },
+                                grid: { left: '4%', right: '6%', bottom: '4%', containLabel: true },
+                                xAxis: { type: 'value', axisLabel: lightChartTheme.textStyle, splitLine: lightChartTheme.splitLine },
+                                yAxis: { type: 'category', data: data.map(d => d.developer), axisLabel: lightChartTheme.textStyle },
+                                series: [{ type: 'bar', data: data.map(d => d.count), itemStyle: { borderRadius: [0, 6, 6, 0], color: '#FB923C' } }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // 7. 发行商 TOP 10
+                    try {
+                        const res = await fetch('/api/games/publishers?limit=10');
+                        const data = ((await res.json()).data || []).reverse();
+                        const dom = document.getElementById('chart-labs-pubs');
+                        if (dom) {
+                            const chart = echarts.init(dom);
+                            chartInstances['pubs'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...lightChartTheme.tooltip },
+                                grid: { left: '4%', right: '6%', bottom: '4%', containLabel: true },
+                                xAxis: { type: 'value', axisLabel: lightChartTheme.textStyle, splitLine: lightChartTheme.splitLine },
+                                yAxis: { type: 'category', data: data.map(d => d.publisher), axisLabel: lightChartTheme.textStyle },
+                                series: [{ type: 'bar', data: data.map(d => d.count), itemStyle: { borderRadius: [0, 6, 6, 0], color: '#34A853' } }]
+                            });
+                        }
+                    } catch (e) {}
+                };
+
+                // 加载关联分析模块
+                const loadCorrelations = async () => {
+                    try {
+                        const res = await fetch('/api/games/correlations');
+                        const data = (await res.json()).data || {};
+
+                        // 1. 类型与价格水平
+                        const gp = (data.genre_price || []).slice(0, 8);
+                        const cPrice = document.getElementById('chart-labs-corr-price');
+                        if (cPrice) {
+                            const chart = echarts.init(cPrice);
+                            chartInstances['corrPrice'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...lightChartTheme.tooltip },
+                                legend: { top: '2%', textStyle: lightChartTheme.textStyle },
+                                grid: { left: '4%', right: '4%', bottom: '15%', containLabel: true },
+                                xAxis: { type: 'category', data: gp.map(d => d.genre), axisLabel: { ...lightChartTheme.textStyle, rotate: 20 } },
+                                yAxis: { type: 'value', name: '价格 (元)', axisLabel: lightChartTheme.textStyle, splitLine: lightChartTheme.splitLine },
+                                series: [
+                                    { name: '平均售价', type: 'bar', data: gp.map(d => d.mean_price), itemStyle: { color: '#FB923C', borderRadius: [4, 4, 0, 0] } },
+                                    { name: '中位售价', type: 'bar', data: gp.map(d => d.median_price), itemStyle: { color: '#34A853', borderRadius: [4, 4, 0, 0] } }
+                                ]
+                            });
+                        }
+
+                        // 2. 类型与折扣力度
+                        const gd = (data.genre_discount || []).slice(0, 8);
+                        const cDisc = document.getElementById('chart-labs-corr-discount');
+                        if (cDisc) {
+                            const chart = echarts.init(cDisc);
+                            chartInstances['corrDisc'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...lightChartTheme.tooltip },
+                                legend: { top: '2%', textStyle: lightChartTheme.textStyle },
+                                grid: { left: '4%', right: '4%', bottom: '15%', containLabel: true },
+                                xAxis: { type: 'category', data: gd.map(d => d.genre), axisLabel: { ...lightChartTheme.textStyle, rotate: 20 } },
+                                yAxis: { type: 'value', name: '百分比 (%)', axisLabel: lightChartTheme.textStyle, splitLine: lightChartTheme.splitLine },
+                                series: [
+                                    { name: '打折覆盖率', type: 'bar', data: gd.map(d => d.discount_rate), itemStyle: { color: '#8B5CF6', borderRadius: [4, 4, 0, 0] } },
+                                    { name: '平均折让深度', type: 'line', data: gd.map(d => d.mean_discount), smooth: true, lineStyle: { width: 3, color: '#F59E0B' }, itemStyle: { color: '#F59E0B' } }
+                                ]
+                            });
+                        }
+
+                        // 3. 共现热力图
+                        const gm = data.genre_matrix || {};
+                        const topG = gm.top_genres || [];
+                        const mat = [];
+                        let maxVal = 0;
+                        topG.forEach((g1, i) => {
+                            topG.forEach((g2, j) => {
+                                const v = (gm.matrix && gm.matrix[g1] && gm.matrix[g1][g2]) || 0;
+                                if (v > maxVal) maxVal = v;
+                                mat.push([j, i, v]);
+                            });
+                        });
+                        const cHeat = document.getElementById('chart-labs-corr-heatmap');
+                        if (cHeat) {
+                            const chart = echarts.init(cHeat);
+                            chartInstances['corrHeat'] = chart;
+                            chart.setOption({
+                                tooltip: {
+                                    position: 'top',
+                                    formatter: p => `${topG[p.value[1]]} + ${topG[p.value[0]]}<br/>共现频次: ${p.value[2]} 次`,
+                                    ...lightChartTheme.tooltip
+                                },
+                                grid: { left: '10%', right: '12%', top: '4%', bottom: '15%' },
+                                xAxis: { type: 'category', data: topG, splitArea: { show: true }, axisLabel: { ...lightChartTheme.textStyle, rotate: 25 } },
+                                yAxis: { type: 'category', data: topG, splitArea: { show: true }, axisLabel: lightChartTheme.textStyle },
+                                visualMap: {
+                                    min: 0,
+                                    max: maxVal || 5,
+                                    calculable: true,
+                                    orient: 'vertical',
+                                    right: '2%',
+                                    top: 'center',
+                                    textStyle: lightChartTheme.textStyle,
+                                    inRange: { color: ['#FFFFFF', '#BAE6FD', '#38BDF8', '#0284C7'] }
+                                },
+                                series: [{ name: '共现频次', type: 'heatmap', data: mat, label: { show: true, color: '#1E293B', fontSize: 11 } }]
+                            });
+                        }
+
+                        // 4. 平台跨系统对比
+                        const gpPlat = (data.genre_platform || []).slice(0, 8);
+                        const cPlat = document.getElementById('chart-labs-corr-platform');
+                        if (cPlat) {
+                            const chart = echarts.init(cPlat);
+                            chartInstances['corrPlat'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...lightChartTheme.tooltip },
+                                legend: { top: '2%', textStyle: lightChartTheme.textStyle },
+                                grid: { left: '4%', right: '4%', bottom: '15%', containLabel: true },
+                                xAxis: { type: 'category', data: gpPlat.map(d => d.genre), axisLabel: { ...lightChartTheme.textStyle, rotate: 20 } },
+                                yAxis: { type: 'value', name: '支持率 (%)', axisLabel: lightChartTheme.textStyle, splitLine: lightChartTheme.splitLine },
+                                series: [
+                                    { name: 'macOS 支持率', type: 'bar', data: gpPlat.map(d => d.mac_rate), itemStyle: { color: '#4285F4', borderRadius: [4, 4, 0, 0] } },
+                                    { name: 'Linux 支持率', type: 'bar', data: gpPlat.map(d => d.linux_rate), itemStyle: { color: '#EA4335', borderRadius: [4, 4, 0, 0] } }
+                                ]
+                            });
+                        }
+                    } catch (e) {}
+                };
+
+                const refreshData = async () => {
+                    await fetchStatus();
+                    await fetchOverview();
+                    await fetchGameList();
+                    await loadOverviewCharts();
+                    if (currentTab.value === 'correlations') await loadCorrelations();
+                };
+
+                onMounted(async () => {
+                    window.addEventListener('resize', () => {
+                        Object.values(chartInstances).forEach(c => c && c.resize());
+                    });
+                    await fetchStatus();
+                    await fetchOverview();
+                    await fetchGameList();
+                    await loadOverviewCharts();
+                });
+
+                return {
+                    currentTab,
+                    systemStatus,
+                    overview,
+                    filters,
+                    gameList,
+                    quickGenres,
+                    selectedGame,
+                    syncing,
+                    switchTab,
+                    handleSearch,
+                    selectGenre,
+                    changePage,
+                    syncToDb,
+                    refreshData
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

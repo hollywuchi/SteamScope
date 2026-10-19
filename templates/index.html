@@ -1,0 +1,1958 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steam Gaming Lab | 电子游戏市场多维数据分析与研究系统</title>
+    <!-- 引入 Web 字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <!-- 引入 Vue 3 与 ECharts 5 (稳定 CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        :root {
+            --bg-canvas: #07090e;
+            --surface-card: rgba(18, 22, 34, 0.75);
+            --surface-elevated: rgba(28, 34, 52, 0.85);
+            --surface-glass: rgba(14, 17, 26, 0.65);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(56, 189, 248, 0.35);
+            --primary: #38bdf8;
+            --primary-rgb: 56, 189, 248;
+            --secondary: #818cf8;
+            --accent-emerald: #34d399;
+            --accent-amber: #fbbf24;
+            --accent-rose: #f43f5e;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --radius-pill: 9999px;
+            --radius-card: 22px;
+            --radius-sm: 12px;
+            --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            --font-display: 'Space Grotesk', system-ui, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient Cosmic Glows (Google Labs Signature) */
+        .ambient-mesh {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            background: 
+                radial-gradient(circle at 10% 15%, rgba(56, 189, 248, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 90% 20%, rgba(129, 140, 248, 0.14) 0%, transparent 45%),
+                radial-gradient(circle at 50% 90%, rgba(52, 211, 153, 0.08) 0%, transparent 50%);
+        }
+
+        /* Container */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 20px 28px 60px;
+        }
+
+        /* 顶部导航条 (Floating Capsule Header) */
+        .navbar-capsule {
+            position: sticky;
+            top: 18px;
+            z-index: 100;
+            background: rgba(13, 16, 26, 0.82);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-pill);
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+            margin-bottom: 32px;
+            transition: border-color 0.3s;
+        }
+
+        .navbar-capsule:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .brand-icon-box {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-pill);
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(129, 140, 248, 0.3));
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 19px;
+            font-weight: 700;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.25);
+        }
+
+        .brand-info h1 {
+            font-family: var(--font-display);
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(120deg, #ffffff 40%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-info p {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        /* Nav Pills (M3 Segmented Controller) */
+        .nav-pills {
+            display: flex;
+            align-items: center;
+            background: rgba(8, 10, 16, 0.6);
+            border-radius: var(--radius-pill);
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            gap: 4px;
+        }
+
+        .nav-item {
+            padding: 8px 18px;
+            border-radius: var(--radius-pill);
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+            background: rgba(56, 189, 248, 0.12);
+            border-color: rgba(56, 189, 248, 0.35);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.15);
+        }
+
+        .nav-item .pill-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        /* Header Right Actions */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: var(--radius-pill);
+            background: rgba(52, 211, 153, 0.08);
+            border: 1px solid rgba(52, 211, 153, 0.25);
+            color: var(--accent-emerald);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-pill.offline {
+            background: rgba(244, 63, 94, 0.08);
+            border-color: rgba(244, 63, 94, 0.25);
+            color: var(--accent-rose);
+        }
+
+        .pulse-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+            box-shadow: 0 0 8px currentColor;
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.7; }
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            border-radius: var(--radius-pill);
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            color: var(--text-primary);
+            border-color: var(--primary);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        /* KPI Quick Stat Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .kpi-card {
+            background: var(--surface-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-subtle);
+            border-radius: 18px;
+            padding: 16px 20px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-glow);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.1);
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--card-accent, var(--primary)), transparent);
+            opacity: 0.7;
+        }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .kpi-icon {
+            font-size: 15px;
+            opacity: 0.8;
+        }
+
+        .kpi-value {
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .kpi-sub {
+            font-size: 11.5px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 统一卡片容器 (Google Labs Glass Cards) */
+        .labs-card {
+            background: var(--surface-card);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-card);
+            padding: 24px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .labs-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .card-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-spark {
+            color: var(--primary);
+            font-size: 14px;
+            filter: drop-shadow(0 0 6px var(--primary));
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 16.5px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .card-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .chart-box-md {
+            width: 100%;
+            height: 350px;
+        }
+
+        .chart-box-lg {
+            width: 100%;
+            height: 440px;
+        }
+
+        /* Explorer Tab (游戏检索器) */
+        .filter-glass-bar {
+            background: var(--surface-glass);
+            border: 1px solid var(--border-subtle);
+            border-radius: 18px;
+            padding: 16px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .search-input-box {
+            position: relative;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .search-input-box input {
+            width: 100%;
+            background: rgba(8, 10, 16, 0.7);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-pill);
+            padding: 10px 18px 10px 42px;
+            color: var(--text-primary);
+            font-size: 13.5px;
+            font-family: var(--font-main);
+            outline: none;
+            transition: all 0.25s;
+        }
+
+        .search-input-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.2);
+            background: rgba(13, 16, 26, 0.9);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .m3-select {
+            background: rgba(8, 10, 16, 0.7);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            border-radius: var(--radius-pill);
+            padding: 9px 16px;
+            font-size: 13px;
+            font-family: var(--font-main);
+            font-weight: 500;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .m3-select:hover, .m3-select:focus {
+            border-color: var(--primary);
+            color: var(--text-primary);
+        }
+
+        /* Genre Pill Selector */
+        .genre-chips-container {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+            scrollbar-width: thin;
+        }
+
+        .genre-chips-container::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .genre-chips-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .genre-chip {
+            padding: 6px 16px;
+            border-radius: var(--radius-pill);
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .genre-chip:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .genre-chip.active {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+        }
+
+        /* Modern Table */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .labs-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        .labs-table th {
+            padding: 12px 18px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .labs-table td {
+            padding: 16px 18px;
+            background: rgba(14, 18, 28, 0.6);
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 13.5px;
+            vertical-align: middle;
+            transition: background 0.2s;
+        }
+
+        .labs-table tr td:first-child {
+            border-left: 1px solid rgba(255, 255, 255, 0.04);
+            border-top-left-radius: 14px;
+            border-bottom-left-radius: 14px;
+        }
+
+        .labs-table tr td:last-child {
+            border-right: 1px solid rgba(255, 255, 255, 0.04);
+            border-top-right-radius: 14px;
+            border-bottom-right-radius: 14px;
+        }
+
+        .labs-table tr:hover td {
+            background: rgba(28, 35, 54, 0.7);
+            border-color: rgba(56, 189, 248, 0.25);
+        }
+
+        .game-title-cell {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .game-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .game-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .tag-pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+            margin-right: 4px;
+            margin-bottom: 2px;
+        }
+
+        .price-badge {
+            font-weight: 700;
+            font-family: var(--font-display);
+        }
+
+        .price-badge.free {
+            color: var(--accent-emerald);
+        }
+
+        .discount-pill {
+            background: rgba(244, 63, 94, 0.15);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            color: var(--accent-rose);
+            padding: 2px 8px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+
+        /* Action Buttons */
+        .btn-glass {
+            padding: 6px 14px;
+            border-radius: var(--radius-pill);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-glass:hover {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-primary-m3 {
+            padding: 10px 22px;
+            border-radius: var(--radius-pill);
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            border: none;
+            color: #ffffff;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(14, 165, 233, 0.35);
+        }
+
+        .btn-primary-m3:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(14, 165, 233, 0.5);
+        }
+
+        .btn-primary-m3:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Pagination */
+        .pagination-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 24px;
+            padding: 0 8px;
+        }
+
+        .page-info {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .page-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Modal Dialog (Google Labs Glass Modal) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 7, 12, 0.85);
+            backdrop-filter: blur(16px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-card {
+            background: rgba(18, 22, 36, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 26px;
+            max-width: 650px;
+            width: 100%;
+            padding: 32px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65), 0 0 30px rgba(56, 189, 248, 0.15);
+            position: relative;
+            animation: modal-pop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modal-pop {
+            0% { transform: scale(0.94); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            color: #ffffff;
+            background: rgba(244, 63, 94, 0.2);
+            border-color: var(--accent-rose);
+        }
+
+        .detail-row {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 13.5px;
+        }
+
+        .detail-label {
+            width: 120px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .detail-content {
+            flex: 1;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Toast Message Notification */
+        .toast-box {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 2000;
+            padding: 12px 24px;
+            border-radius: var(--radius-pill);
+            background: rgba(18, 22, 34, 0.95);
+            border: 1px solid var(--primary);
+            color: var(--text-primary);
+            font-size: 13.5px;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 16px rgba(56, 189, 248, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slide-up 0.3s ease;
+        }
+
+        @keyframes slide-up {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Empty / Loading State */
+        .empty-placeholder {
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1200px) {
+            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .navbar-capsule { flex-direction: column; gap: 14px; border-radius: 20px; }
+            .nav-pills { width: 100%; justify-content: space-around; }
+            .filter-glass-bar { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 背景微光氛围 -->
+        <div class="ambient-mesh"></div>
+
+        <div class="app-container">
+            <!-- 顶部 Google Labs 浮动胶囊导航条 -->
+            <nav class="navbar-capsule">
+                <div class="brand-section" @click="currentTab = 'overview'">
+                    <div class="brand-icon-box">✦</div>
+                    <div class="brand-info">
+                        <h1>Steam Gaming Lab</h1>
+                        <p>Research & Analytics Studio</p>
+                    </div>
+                </div>
+
+                <!-- M3 Segmented Navigation Pills -->
+                <div class="nav-pills">
+                    <div class="nav-item" :class="{ active: currentTab === 'overview' }" @click="switchTab('overview')">
+                        <span v-if="currentTab === 'overview'" class="pill-dot"></span>
+                        <span>❖ 市场全景</span>
+                    </div>
+                    <div class="nav-item" :class="{ active: currentTab === 'correlations' }" @click="switchTab('correlations')">
+                        <span v-if="currentTab === 'correlations'" class="pill-dot"></span>
+                        <span>◈ 关联透视</span>
+                    </div>
+                    <div class="nav-item" :class="{ active: currentTab === 'explorer' }" @click="switchTab('explorer')">
+                        <span v-if="currentTab === 'explorer'" class="pill-dot"></span>
+                        <span>☵ 游戏探索</span>
+                    </div>
+                    <div class="nav-item" :class="{ active: currentTab === 'cloud' }" @click="switchTab('cloud')">
+                        <span v-if="currentTab === 'cloud'" class="pill-dot"></span>
+                        <span>⚙ 云端状态</span>
+                    </div>
+                </div>
+
+                <!-- 右侧状态指示与刷新 -->
+                <div class="header-actions">
+                    <a href="/genz" class="btn-glass" style="color:#ff007a; border-color:#ff007a; text-decoration:none;" title="体验 Gen Z 极繁赛博风格">
+                        <span>⚡ 极繁赛博版</span>
+                    </a>
+                    <a href="/system" class="btn-glass" style="color:var(--primary); border-color:var(--border-glow); text-decoration:none;" title="体验 Google Labs 系统设计风格">
+                        <span>🎨 Labs 风格</span>
+                    </a>
+                    <div class="status-pill" :class="{ offline: !systemStatus?.mysql?.connected }">
+                        <span class="pulse-indicator"></span>
+                        <span>{{ systemStatus?.mysql?.connected ? 'MySQL 已连接' : '本地容灾模式' }}</span>
+                    </div>
+                    <button class="icon-btn" title="刷新系统数据" @click="refreshAllData">
+                        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- 顶部宏观 KPI 胶囊卡片组 (全页面通用展示) -->
+            <section class="kpi-grid">
+                <div class="kpi-card" style="--card-accent: #38bdf8;">
+                    <div class="kpi-header">
+                        <span class="kpi-label">有效游戏样本</span>
+                        <span class="kpi-icon">🎮</span>
+                    </div>
+                    <div class="kpi-value">{{ overview?.total_games || 0 }} <span style="font-size:14px;color:var(--text-muted);">款</span></div>
+                    <div class="kpi-sub">近 3 年清洗后标准数据</div>
+                </div>
+
+                <div class="kpi-card" style="--card-accent: #34d399;">
+                    <div class="kpi-header">
+                        <span class="kpi-label">免费游戏占比</span>
+                        <span class="kpi-icon">⚡</span>
+                    </div>
+                    <div class="kpi-value">{{ overview?.free_ratio || 0 }}%</div>
+                    <div class="kpi-sub">共 {{ overview?.free_count || 0 }} 款免费游戏</div>
+                </div>
+
+                <div class="kpi-card" style="--card-accent: #818cf8;">
+                    <div class="kpi-header">
+                        <span class="kpi-label">付费游戏平均价</span>
+                        <span class="kpi-icon">💰</span>
+                    </div>
+                    <div class="kpi-value">¥{{ overview?.price_stats?.mean_price || 0 }}</div>
+                    <div class="kpi-sub">中位数: ¥{{ overview?.price_stats?.median_price || 0 }}</div>
+                </div>
+
+                <div class="kpi-card" style="--card-accent: #fbbf24;">
+                    <div class="kpi-header">
+                        <span class="kpi-label">当前打折比例</span>
+                        <span class="kpi-icon">🏷️</span>
+                    </div>
+                    <div class="kpi-value">{{ overview?.discount_summary?.discount_rate || 0 }}%</div>
+                    <div class="kpi-sub">{{ overview?.discount_summary?.discounted_games || 0 }} 款正在特惠</div>
+                </div>
+
+                <div class="kpi-card" style="--card-accent: #f43f5e;">
+                    <div class="kpi-header">
+                        <span class="kpi-label">最主流游戏类型</span>
+                        <span class="kpi-icon">🏆</span>
+                    </div>
+                    <div class="kpi-value" style="font-size: 20px;">{{ overview?.top_genre || '暂无' }}</div>
+                    <div class="kpi-sub">Genre 榜单冠军</div>
+                </div>
+
+                <div class="kpi-card" style="--card-accent: #a855f7;">
+                    <div class="kpi-header">
+                        <span class="kpi-label">跨平台支持率</span>
+                        <span class="kpi-icon">🖥️</span>
+                    </div>
+                    <div class="kpi-value">{{ calcMultiPlatformRate() }}%</div>
+                    <div class="kpi-sub">Mac/Linux 多平台兼容</div>
+                </div>
+            </section>
+
+            <!-- ========================================================= -->
+            <!-- 模块 1：市场全景大屏 (Overview Lab)                        -->
+            <!-- ========================================================= -->
+            <main v-show="currentTab === 'overview'">
+                <div class="grid-2">
+                    <!-- 8.1 年度发行数量走势折线图 -->
+                    <div class="labs-card">
+                        <div class="card-header-bar">
+                            <div class="card-title-group">
+                                <span class="card-spark">✦</span>
+                                <h3 class="card-title">8.1 游戏市场年度发行走势</h3>
+                            </div>
+                            <span class="card-badge">折线平滑发光图</span>
+                        </div>
+                        <div id="chart-year-trend" class="chart-box-md"></div>
+                    </div>
+
+                    <!-- 8.2 热门类型分布柱状图 -->
+                    <div class="labs-card">
+                        <div class="card-header-bar">
+                            <div class="card-title-group">
+                                <span class="card-spark">✦</span>
+                                <h3 class="card-title">8.2 热门游戏类型排行榜 TOP 10</h3>
+                            </div>
+                            <span class="card-badge">横向条形图</span>
+                        </div>
+                        <div id="chart-genre-top" class="chart-box-md"></div>
+                    </div>
+                </div>
+
+                <div class="grid-3">
+                    <!-- 8.3 免费 vs 付费占比环形图 -->
+                    <div class="labs-card">
+                        <div class="card-header-bar">
+                            <div class="card-title-group">
+                                <span class="card-spark">✦</span>
+                                <h3 class="card-title">8.3 商业属性比例</h3>
+                            </div>
+                            <span class="card-badge">环形饼图</span>
+                        </div>
+                        <div id="chart-pie-free" class="chart-box-md"></div>
+                    </div>
+
+                    <!-- 8.3 操作系统平台占比 -->
+                    <div class="labs-card">
+                        <div class="card-header-bar">
+                            <div class="card-title-group">
+                                <span class="card-spark">✦</span>
+                                <h3 class="card-title">8.3 操作系统支持分布</h3>
+                            </div>
+                            <span class="card-badge">玫瑰极坐标图</span>
+                        </div>
+                        <div id="chart-pie-platform" class="chart-box-md"></div>
+                    </div>
+
+                    <!-- 8.4 价格区间阶梯直方图 -->
+                    <div class="labs-card">
+                        <div class="card-header-bar">
+                            <div class="card-title-group">
+                                <span class="card-spark">✦</span>
+                                <h3 class="card-title">8.4 游戏售价梯度分布</h3>
+                            </div>
+                            <span class="card-badge">阶梯直方图</span>
+                        </div>
+                        <div id="chart-price-distribution" class="chart-box-md"></div>
+                    </div>
+                </div>
+
+                <!-- 8.2 TOP 开发商与发行商排行 -->
+                <div class="grid-2">
+                    <div class="labs-card">
+                        <div class="card-header-bar">
+                            <div class="card-title-group">
+                                <span class="card-spark">✦</span>
+                                <h3 class="card-title">6.6 活跃开发商作品数 TOP 10</h3>
+                            </div>
+                            <span class="card-badge">开发商排行</span>
+                        </div>
+                        <div id="chart-developer-top" class="chart-box-md"></div>
+                    </div>
+
+                    <div class="labs-card">
+                        <div class="card-header-bar">
+                            <div class="card-title-group">
+                                <span class="card-spark">✦</span>
+                                <h3 class="card-title">6.7 活跃发行商作品数 TOP 10</h3>
+                            </div>
+                            <span class="card-badge">发行商排行</span>
+                        </div>
+                        <div id="chart-publisher-top" class="chart-box-md"></div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- ========================================================= -->
+            <!-- 模块 2：多维关联透视 (Correlations Matrix)                -->
+            <!-- ========================================================= -->
+            <main v-show="currentTab === 'correlations'">
+                <div class="grid-2">
+                    <!-- 7.1 类型 × 价格水平 (均价 vs 中位价) -->
+                    <div class="labs-card">
+                        <div class="card-header-bar">
+                            <div class="card-title-group">
+                                <span class="card-spark">✦</span>
+                                <h3 class="card-title">7.1 游戏类型与价格水平 (Genre × Price)</h3>
+                            </div>
+                            <span class="card-badge">均价/中位对比</span>
+                        </div>
+                        <div id="chart-corr-price" class="chart-box-lg"></div>
+                    </div>
+
+                    <!-- 7.2 类型 × 折扣力度 -->
+                    <div class="labs-card">
+                        <div class="card-header-bar">
+                            <div class="card-title-group">
+                                <span class="card-spark">✦</span>
+                                <h3 class="card-title">7.2 游戏类型与折扣特征 (Genre × Discount)</h3>
+                            </div>
+                            <span class="card-badge">打折率与深度</span>
+                        </div>
+                        <div id="chart-corr-discount" class="chart-box-lg"></div>
+                    </div>
+                </div>
+
+                <!-- 7.6 类型共现热力矩阵 (Genre × Genre Heatmap) -->
+                <div class="labs-card" style="margin-bottom: 24px;">
+                    <div class="card-header-bar">
+                        <div class="card-title-group">
+                            <span class="card-spark">✦</span>
+                            <h3 class="card-title">7.6 游戏类型共现热力矩阵 (Genre × Genre Matrix)</h3>
+                        </div>
+                        <span class="card-badge">多维共现热力图</span>
+                    </div>
+                    <div id="chart-corr-heatmap" style="width: 100%; height: 500px;"></div>
+                </div>
+
+                <!-- 7.3 类型与跨平台支持度对比 -->
+                <div class="labs-card">
+                    <div class="card-header-bar">
+                        <div class="card-title-group">
+                            <span class="card-spark">✦</span>
+                            <h3 class="card-title">7.3 各游戏类型跨平台支持率 (macOS / Linux 适配对比)</h3>
+                        </div>
+                        <span class="card-badge">跨平台适配率</span>
+                    </div>
+                    <div id="chart-corr-platform" class="chart-box-md"></div>
+                </div>
+            </main>
+
+            <!-- ========================================================= -->
+            <!-- 模块 3：游戏探索与检索中心 (Game Explorer)                -->
+            <!-- ========================================================= -->
+            <main v-show="currentTab === 'explorer'">
+                <!-- 顶部检索与过滤栏 (Glass Filter Bar) -->
+                <div class="filter-glass-bar">
+                    <div class="search-input-box">
+                        <span class="search-icon">🔍</span>
+                        <input 
+                            type="text" 
+                            v-model="filters.keyword" 
+                            placeholder="搜索游戏名称、开发商或发行商..."
+                            @keyup.enter="handleSearch"
+                        >
+                    </div>
+
+                    <div class="filter-controls">
+                        <select class="m3-select" v-model="filters.is_free" @change="handleSearch">
+                            <option value="">全部商业类型</option>
+                            <option value="1">只看免费游戏</option>
+                            <option value="0">只看付费游戏</option>
+                        </select>
+
+                        <select class="m3-select" v-model="filters.sort_by" @change="handleSearch">
+                            <option value="appid">按 AppID 排序</option>
+                            <option value="final_price">按折后售价排序</option>
+                            <option value="discount_percent">按折扣力度排序</option>
+                        </select>
+
+                        <select class="m3-select" v-model="filters.order" @change="handleSearch">
+                            <option value="desc">降序 ↓</option>
+                            <option value="asc">升序 ↑</option>
+                        </select>
+
+                        <button class="btn-primary-m3" @click="handleSearch">
+                            <span>检索</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 类型快捷 Pills 滑动选择栏 -->
+                <div class="genre-chips-container">
+                    <div 
+                        class="genre-chip" 
+                        :class="{ active: filters.genre === '' }"
+                        @click="selectGenre('')"
+                    >
+                        全部类型
+                    </div>
+                    <div 
+                        v-for="g in quickGenres" 
+                        :key="g"
+                        class="genre-chip" 
+                        :class="{ active: filters.genre === g }"
+                        @click="selectGenre(g)"
+                    >
+                        {{ g }}
+                    </div>
+                </div>
+
+                <!-- 游戏数据表格 -->
+                <div class="labs-card">
+                    <div class="card-header-bar">
+                        <div class="card-title-group">
+                            <span class="card-spark">✦</span>
+                            <h3 class="card-title">清洗后游戏数据集检索结果</h3>
+                        </div>
+                        <span class="card-badge">共找到 {{ gameList.total }} 款游戏</span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="labs-table">
+                            <thead>
+                                <tr>
+                                    <th>AppID</th>
+                                    <th>游戏名称 & 发售信息</th>
+                                    <th>开发商 / 发行商</th>
+                                    <th>主要类型 (Genres)</th>
+                                    <th>支持系统</th>
+                                    <th>售价 & 折扣</th>
+                                    <th style="text-align: right;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="game in gameList.items" :key="game.appid">
+                                    <td>
+                                        <a :href="'https://store.steampowered.com/app/' + game.appid" target="_blank" class="tag-pill" style="color:var(--primary); text-decoration:none;">
+                                            #{{ game.appid }} ↗
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div class="game-title-cell">
+                                            <span class="game-name">{{ game.name }}</span>
+                                            <span class="game-meta">{{ game.release_date || '未知日期' }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="game-meta" style="color: var(--text-secondary);">
+                                            <div>研: {{ game.developers || '暂无' }}</div>
+                                            <div>发: {{ game.publishers || '暂无' }}</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <span 
+                                                v-for="genre in (game.genres ? game.genres.split(';').slice(0, 3) : [])" 
+                                                :key="genre" 
+                                                class="tag-pill"
+                                            >
+                                                {{ genre.trim() }}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style="font-size:12px; color:var(--text-secondary);">
+                                            {{ formatPlatforms(game.platforms) }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <span v-if="game.is_free" class="price-badge free">免费游玩</span>
+                                            <span v-else class="price-badge">
+                                                ¥{{ game.final_price }}
+                                                <span v-if="game.discount_percent > 0" class="discount-pill">
+                                                    -{{ game.discount_percent }}%
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <button class="btn-glass" @click="openGameDetail(game)">
+                                            <span>详情</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="gameList.items.length === 0">
+                                    <td colspan="7">
+                                        <div class="empty-placeholder">
+                                            未检索到匹配的 Steam 游戏，请尝试调整关键词或筛选条件。
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分页控制器 -->
+                    <div class="pagination-bar" v-if="gameList.total > 0">
+                        <div class="page-info">
+                            显示第 {{ (filters.page - 1) * filters.page_size + 1 }} ~ {{ Math.min(filters.page * filters.page_size, gameList.total) }} 条，共 {{ gameList.total }} 条
+                        </div>
+                        <div class="page-btns">
+                            <button 
+                                class="btn-glass" 
+                                :disabled="filters.page <= 1"
+                                @click="changePage(filters.page - 1)"
+                            >
+                                ← 上一页
+                            </button>
+                            <span class="btn-glass" style="cursor:default; background:rgba(56,189,248,0.1); border-color:var(--primary); color:var(--primary);">
+                                第 {{ filters.page }} / {{ gameList.total_pages }} 页
+                            </span>
+                            <button 
+                                class="btn-glass" 
+                                :disabled="filters.page >= gameList.total_pages"
+                                @click="changePage(filters.page + 1)"
+                            >
+                                下一页 →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- ========================================================= -->
+            <!-- 模块 4：云端状态与控制台 (Cloud Ops)                      -->
+            <!-- ========================================================= -->
+            <main v-show="currentTab === 'cloud'">
+                <div class="grid-2">
+                    <!-- 云端数据库连接状态卡片 -->
+                    <div class="labs-card">
+                        <div class="card-header-bar">
+                            <div class="card-title-group">
+                                <span class="card-spark">✦</span>
+                                <h3 class="card-title">远程 MySQL 数据库配置与状态</h3>
+                            </div>
+                            <span class="card-badge" :style="{ color: systemStatus?.mysql?.connected ? 'var(--accent-emerald)' : 'var(--accent-rose)' }">
+                                {{ systemStatus?.mysql?.connected ? '在线 (CONNECTED)' : '未连接 (DISCONNECTED)' }}
+                            </span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">服务器地址</span>
+                            <span class="detail-content">{{ systemStatus?.mysql?.host }}:{{ systemStatus?.mysql?.port }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">数据库名</span>
+                            <span class="detail-content">{{ systemStatus?.mysql?.database }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">核心数据表</span>
+                            <span class="detail-content"><code>{{ systemStatus?.mysql?.table }}</code></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">云端已入库记录</span>
+                            <span class="detail-content" style="color:var(--primary); font-weight:700;">
+                                {{ systemStatus?.mysql?.records_in_table }} 款游戏
+                            </span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">当前运行模式</span>
+                            <span class="detail-content">
+                                <span class="tag-pill" style="background:rgba(56,189,248,0.15); color:var(--primary); font-weight:700;">
+                                    {{ systemStatus?.active_mode === 'mysql' ? 'MySQL 直连优先模式' : '本地文件自适应容灾模式' }}
+                                </span>
+                            </span>
+                        </div>
+
+                        <div style="margin-top: 24px;">
+                            <button class="btn-primary-m3" :disabled="syncing" @click="triggerSync">
+                                <span>{{ syncing ? '正在同步数据中...' : '一键将清洗数据同步至 MySQL' }}</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 本地存储与 API 网关 -->
+                    <div class="labs-card">
+                        <div class="card-header-bar">
+                            <div class="card-title-group">
+                                <span class="card-spark">✦</span>
+                                <h3 class="card-title">本地存储流水线与容灾基底</h3>
+                            </div>
+                            <span class="card-badge">Local Storage</span>
+                        </div>
+
+                        <div class="detail-row">
+                            <span class="detail-label">本地清洗文件</span>
+                            <span class="detail-content"><code>{{ systemStatus?.local_storage?.csv_file || 'steam_games_recent_clean.csv' }}</code></span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">本地有效记录</span>
+                            <span class="detail-content">{{ systemStatus?.local_storage?.csv_records }} 条</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">预计算统计缓存</span>
+                            <span class="detail-content">
+                                {{ systemStatus?.local_storage?.summary_json_exists ? 'analysis_summary.json (已就绪)' : '缺失' }}
+                            </span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">系统最后活跃</span>
+                            <span class="detail-content">{{ systemStatus?.timestamp }}</span>
+                        </div>
+
+                        <div style="margin-top: 20px; font-size:12.5px; color:var(--text-muted); line-height: 1.6;">
+                            系统已部署双模自动容灾机制：当云端 MySQL 连接中断或处于离线环境时，后端 API 自动切换至内存 Pandas 与 JSON 预计算缓存，保证大屏看板与毕业设计答辩演示零中断、零崩溃。
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API 全景清单卡片 -->
+                <div class="labs-card">
+                    <div class="card-header-bar">
+                        <div class="card-title-group">
+                            <span class="card-spark">✦</span>
+                            <h3 class="card-title">Flask RESTful 核心 API 接口矩阵</h3>
+                        </div>
+                        <span class="card-badge">14 个标准端点</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+                        <div v-for="api in apiEndpoints" :key="api.path" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:12px 16px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <span class="tag-pill" style="color:var(--primary); font-weight:700;">{{ api.method }}</span>
+                                <span style="font-size:11px; color:var(--text-muted);">{{ api.name }}</span>
+                            </div>
+                            <div style="font-family:monospace; font-size:12px; color:var(--text-secondary); word-break:break-all;">
+                                <a :href="api.path" target="_blank" style="color:inherit; text-decoration:none;">{{ api.path }} ↗</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- 单个游戏详情弹窗 (Google Labs Glass Modal)                -->
+        <!-- ========================================================= -->
+        <div class="modal-overlay" v-if="selectedGame" @click.self="selectedGame = null">
+            <div class="modal-card">
+                <button class="modal-close-btn" @click="selectedGame = null">✕</button>
+                
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                    <span class="card-spark" style="font-size:22px;">✦</span>
+                    <div>
+                        <h2 style="font-family:var(--font-display); font-size:20px; font-weight:700;">{{ selectedGame.name }}</h2>
+                        <span class="tag-pill" style="background:rgba(56,189,248,0.15); color:var(--primary);">AppID: {{ selectedGame.appid }}</span>
+                        <span class="tag-pill" v-if="selectedGame.is_free" style="background:rgba(52,211,153,0.15); color:var(--accent-emerald);">免费游戏</span>
+                    </div>
+                </div>
+
+                <div class="detail-row">
+                    <span class="detail-label">发行日期</span>
+                    <span class="detail-content">{{ selectedGame.release_date || '未知' }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">开发团队</span>
+                    <span class="detail-content">{{ selectedGame.developers || '暂无数据' }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">发行商</span>
+                    <span class="detail-content">{{ selectedGame.publishers || '暂无数据' }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">游戏类型</span>
+                    <span class="detail-content">
+                        <span v-for="g in (selectedGame.genres ? selectedGame.genres.split(';') : [])" :key="g" class="tag-pill">
+                            {{ g.trim() }}
+                        </span>
+                    </span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">支持平台</span>
+                    <span class="detail-content">{{ formatPlatforms(selectedGame.platforms) }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">价格与折扣</span>
+                    <span class="detail-content">
+                        <span v-if="selectedGame.is_free" style="color:var(--accent-emerald); font-weight:700;">免费游玩</span>
+                        <span v-else>
+                            原价: ¥{{ selectedGame.initial_price }} ｜ 现价: ¥{{ selectedGame.final_price }} 
+                            <span v-if="selectedGame.discount_percent > 0" class="discount-pill">-{{ selectedGame.discount_percent }}%</span>
+                        </span>
+                    </span>
+                </div>
+
+                <div style="margin-top: 24px; display:flex; justify-content:flex-end; gap:12px;">
+                    <a :href="'https://store.steampowered.com/app/' + selectedGame.appid" target="_blank" class="btn-primary-m3" style="text-decoration:none;">
+                        <span>前往 Steam 商店主页 ↗</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast 消息通知浮层 -->
+        <div class="toast-box" v-if="toastMessage">
+            <span>✦</span>
+            <span>{{ toastMessage }}</span>
+        </div>
+    </div>
+
+    <!-- Vue 3 核心业务逻辑与 ECharts 渲染脚本 -->
+    <script>
+        const { createApp, ref, onMounted, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                const currentTab = ref('overview');
+                const systemStatus = ref(null);
+                const overview = ref(null);
+                const toastMessage = ref('');
+                const syncing = ref(false);
+                const selectedGame = ref(null);
+
+                // 筛选与检索状态
+                const filters = ref({
+                    keyword: '',
+                    genre: '',
+                    is_free: '',
+                    sort_by: 'appid',
+                    order: 'desc',
+                    page: 1,
+                    page_size: 10
+                });
+
+                const gameList = ref({
+                    total: 0,
+                    page: 1,
+                    page_size: 10,
+                    total_pages: 1,
+                    items: []
+                });
+
+                const quickGenres = ref([
+                    'Action', 'Adventure', 'RPG', 'Strategy', 'Simulation', 
+                    'Indie', 'Casual', 'Sports', 'Racing', 'Massively Multiplayer'
+                ]);
+
+                // API 端点列表
+                const apiEndpoints = ref([
+                    { name: '系统状态', method: 'GET', path: '/api/system/status' },
+                    { name: '市场宏观概览', method: 'GET', path: '/api/games/overview' },
+                    { name: '年度发行走势', method: 'GET', path: '/api/games/year' },
+                    { name: '游戏类型排名', method: 'GET', path: '/api/games/genres' },
+                    { name: '价格区间分布', method: 'GET', path: '/api/games/prices' },
+                    { name: '操作系统支持', method: 'GET', path: '/api/games/platforms' },
+                    { name: '开发商发行量', method: 'GET', path: '/api/games/developers' },
+                    { name: '发行商发行量', method: 'GET', path: '/api/games/publishers' },
+                    { name: '关联分析综合', method: 'GET', path: '/api/games/correlations' },
+                    { name: '游戏列表检索', method: 'GET', path: '/api/games/list' },
+                    { name: '数据同步至DB', method: 'POST', path: '/api/db/sync' },
+                ]);
+
+                // ECharts 实例缓存
+                const chartInstances = {};
+
+                // 弹出 Toast
+                const showToast = (msg, duration = 3000) => {
+                    toastMessage.value = msg;
+                    setTimeout(() => { toastMessage.value = ''; }, duration);
+                };
+
+                // 计算跨平台支持率
+                const calcMultiPlatformRate = () => {
+                    if (!overview.value || !overview.value.total_games) return 0;
+                    const mp = overview.value.platforms_summary?.multi_platform || 0;
+                    return Math.round((mp / overview.value.total_games) * 100);
+                };
+
+                // 格式化平台显示
+                const formatPlatforms = (platformsStr) => {
+                    if (!platformsStr) return 'Windows';
+                    const list = [];
+                    const s = platformsStr.toLowerCase();
+                    if (s.includes('windows')) list.push('Win');
+                    if (s.includes('mac')) list.push('Mac');
+                    if (s.includes('linux')) list.push('Linux');
+                    return list.join(' / ') || 'Win';
+                };
+
+                // 切换 Tab 并重绘对应图表
+                const switchTab = (tab) => {
+                    currentTab.value = tab;
+                    nextTick(() => {
+                        resizeAllCharts();
+                        if (tab === 'correlations') {
+                            loadCorrelationCharts();
+                        }
+                    });
+                };
+
+                // 重置所有图表尺寸
+                const resizeAllCharts = () => {
+                    Object.values(chartInstances).forEach(chart => {
+                        if (chart) chart.resize();
+                    });
+                };
+
+                // 获取系统状态
+                const fetchSystemStatus = async () => {
+                    try {
+                        const res = await fetch('/api/system/status');
+                        const json = await res.json();
+                        if (json.code === 200) systemStatus.value = json.data;
+                    } catch (e) {
+                        console.error('获取系统状态失败:', e);
+                    }
+                };
+
+                // 获取市场概况
+                const fetchOverview = async () => {
+                    try {
+                        const res = await fetch('/api/games/overview');
+                        const json = await res.json();
+                        if (json.code === 200) overview.value = json.data;
+                    } catch (e) {
+                        console.error('获取市场概况失败:', e);
+                    }
+                };
+
+                // 获取游戏列表
+                const fetchGameList = async () => {
+                    try {
+                        const params = new URLSearchParams({
+                            page: filters.value.page,
+                            page_size: filters.value.page_size,
+                            keyword: filters.value.keyword,
+                            genre: filters.value.genre,
+                            is_free: filters.value.is_free,
+                            sort_by: filters.value.sort_by,
+                            order: filters.value.order
+                        });
+                        const res = await fetch('/api/games/list?' + params.toString());
+                        const json = await res.json();
+                        if (json.code === 200) {
+                            gameList.value = json.data;
+                        }
+                    } catch (e) {
+                        console.error('获取游戏列表失败:', e);
+                    }
+                };
+
+                const handleSearch = () => {
+                    filters.value.page = 1;
+                    fetchGameList();
+                };
+
+                const selectGenre = (genre) => {
+                    filters.value.genre = genre;
+                    handleSearch();
+                };
+
+                const changePage = (p) => {
+                    filters.value.page = p;
+                    fetchGameList();
+                };
+
+                const openGameDetail = (game) => {
+                    selectedGame.value = game;
+                };
+
+                // 手动触发同步到 MySQL
+                const triggerSync = async () => {
+                    syncing.value = true;
+                    showToast('正在从清洗后 CSV 同步至 MySQL 数据库...');
+                    try {
+                        const res = await fetch('/api/db/sync', { method: 'POST' });
+                        const json = await res.json();
+                        if (json.code === 200) {
+                            showToast('🎉 数据同步成功！共更新 ' + (json.data?.synced_rows || 0) + ' 条数据');
+                            await fetchSystemStatus();
+                        } else {
+                            showToast('❌ 同步失败: ' + json.message);
+                        }
+                    } catch (e) {
+                        showToast('❌ 接口请求异常');
+                    } finally {
+                        syncing.value = false;
+                    }
+                };
+
+                // 统一的 Google Labs 暗色 ECharts 配置预设
+                const darkThemeOption = {
+                    textStyle: { color: '#94a3b8', fontFamily: 'Plus Jakarta Sans, sans-serif' },
+                    splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.05)', type: 'dashed' } },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 18, 28, 0.9)',
+                        borderColor: 'rgba(56, 189, 248, 0.35)',
+                        borderWidth: 1,
+                        textStyle: { color: '#f8fafc' },
+                        shadowBlur: 16,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                };
+
+                // 加载全景大屏图表
+                const loadOverviewCharts = async () => {
+                    // 1. 年度走势折线图
+                    try {
+                        const res = await fetch('/api/games/year');
+                        const data = (await res.json()).data || [];
+                        const chartDom = document.getElementById('chart-year-trend');
+                        if (chartDom) {
+                            const chart = echarts.init(chartDom);
+                            chartInstances['yearTrend'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...darkThemeOption.tooltip },
+                                grid: { left: '4%', right: '4%', bottom: '8%', containLabel: true },
+                                xAxis: { type: 'category', data: data.map(d => d.year + '年'), axisLabel: darkThemeOption.textStyle },
+                                yAxis: { type: 'value', axisLabel: darkThemeOption.textStyle, splitLine: darkThemeOption.splitLine },
+                                series: [{
+                                    name: '年发行量',
+                                    type: 'line',
+                                    data: data.map(d => d.count),
+                                    smooth: true,
+                                    symbolSize: 8,
+                                    lineStyle: { width: 3.5, color: '#38bdf8' },
+                                    itemStyle: { color: '#38bdf8', borderWidth: 2, borderColor: '#ffffff' },
+                                    areaStyle: {
+                                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                            { offset: 0, color: 'rgba(56, 189, 248, 0.45)' },
+                                            { offset: 1, color: 'rgba(56, 189, 248, 0.0)' }
+                                        ])
+                                    }
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // 2. 热门类型排行榜 TOP 10
+                    try {
+                        const res = await fetch('/api/games/genres?limit=10');
+                        const data = ((await res.json()).data || []).reverse();
+                        const chartDom = document.getElementById('chart-genre-top');
+                        if (chartDom) {
+                            const chart = echarts.init(chartDom);
+                            chartInstances['genreTop'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, ...darkThemeOption.tooltip },
+                                grid: { left: '4%', right: '8%', bottom: '4%', containLabel: true },
+                                xAxis: { type: 'value', axisLabel: darkThemeOption.textStyle, splitLine: darkThemeOption.splitLine },
+                                yAxis: { type: 'category', data: data.map(d => d.genre), axisLabel: darkThemeOption.textStyle },
+                                series: [{
+                                    name: '游戏款数',
+                                    type: 'bar',
+                                    data: data.map(d => d.count),
+                                    itemStyle: {
+                                        borderRadius: [0, 6, 6, 0],
+                                        color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+                                            { offset: 0, color: '#38bdf8' },
+                                            { offset: 1, color: '#818cf8' }
+                                        ])
+                                    }
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // 3. 免费 vs 付费 环形饼图
+                    try {
+                        const res = await fetch('/api/games/prices');
+                        const data = (await res.json()).data || {};
+                        const chartDom = document.getElementById('chart-pie-free');
+                        if (chartDom) {
+                            const chart = echarts.init(chartDom);
+                            chartInstances['pieFree'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'item', ...darkThemeOption.tooltip },
+                                legend: { bottom: '4%', textStyle: darkThemeOption.textStyle },
+                                series: [{
+                                    type: 'pie',
+                                    radius: ['50%', '75%'],
+                                    center: ['50%', '45%'],
+                                    itemStyle: { borderRadius: 8, borderColor: '#0d1017', borderWidth: 3 },
+                                    data: [
+                                        { value: data.free_count || 0, name: '免费游戏', itemStyle: { color: '#34d399' } },
+                                        { value: data.paid_count || 0, name: '付费游戏', itemStyle: { color: '#818cf8' } }
+                                    ]
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // 4. 操作系统平台占比 (极坐标/玫瑰图)
+                    try {
+                        const res = await fetch('/api/games/platforms');
+                        const data = (await res.json()).data || {};
+                        const chartDom = document.getElementById('chart-pie-platform');
+                        if (chartDom) {
+                            const chart = echarts.init(chartDom);
+                            chartInstances['piePlatform'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'item', ...darkThemeOption.tooltip },
+                                legend: { bottom: '4%', textStyle: darkThemeOption.textStyle },
+                                series: [{
+                                    type: 'pie',
+                                    roseType: 'radius',
+                                    radius: ['25%', '70%'],
+                                    center: ['50%', '45%'],
+                                    itemStyle: { borderRadius: 6 },
+                                    data: [
+                                        { value: data.windows || 0, name: 'Windows', itemStyle: { color: '#38bdf8' } },
+                                        { value: data.mac || 0, name: 'macOS', itemStyle: { color: '#fbbf24' } },
+                                        { value: data.linux || 0, name: 'Linux', itemStyle: { color: '#f43f5e' } }
+                                    ]
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // 5. 价格梯度分布直方图
+                    try {
+                        const res = await fetch('/api/games/prices');
+                        const dist = (await res.json()).data?.distribution || [];
+                        const chartDom = document.getElementById('chart-price-distribution');
+                        if (chartDom) {
+                            const chart = echarts.init(chartDom);
+                            chartInstances['priceDist'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...darkThemeOption.tooltip },
+                                grid: { left: '4%', right: '4%', bottom: '15%', containLabel: true },
+                                xAxis: {
+                                    type: 'category',
+                                    data: dist.map(d => d.range.split('(')[0]),
+                                    axisLabel: { ...darkThemeOption.textStyle, rotate: 22, interval: 0 }
+                                },
+                                yAxis: { type: 'value', axisLabel: darkThemeOption.textStyle, splitLine: darkThemeOption.splitLine },
+                                series: [{
+                                    name: '游戏款数',
+                                    type: 'bar',
+                                    data: dist.map(d => d.count),
+                                    itemStyle: {
+                                        borderRadius: [6, 6, 0, 0],
+                                        color: '#a855f7'
+                                    }
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // 6. 开发商排行 TOP 10
+                    try {
+                        const res = await fetch('/api/games/developers?limit=10');
+                        const data = ((await res.json()).data || []).reverse();
+                        const chartDom = document.getElementById('chart-developer-top');
+                        if (chartDom) {
+                            const chart = echarts.init(chartDom);
+                            chartInstances['devTop'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...darkThemeOption.tooltip },
+                                grid: { left: '4%', right: '6%', bottom: '4%', containLabel: true },
+                                xAxis: { type: 'value', axisLabel: darkThemeOption.textStyle, splitLine: darkThemeOption.splitLine },
+                                yAxis: { type: 'category', data: data.map(d => d.developer), axisLabel: darkThemeOption.textStyle },
+                                series: [{
+                                    type: 'bar',
+                                    data: data.map(d => d.count),
+                                    itemStyle: { borderRadius: [0, 4, 4, 0], color: '#f59e0b' }
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // 7. 发行商排行 TOP 10
+                    try {
+                        const res = await fetch('/api/games/publishers?limit=10');
+                        const data = ((await res.json()).data || []).reverse();
+                        const chartDom = document.getElementById('chart-publisher-top');
+                        if (chartDom) {
+                            const chart = echarts.init(chartDom);
+                            chartInstances['pubTop'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...darkThemeOption.tooltip },
+                                grid: { left: '4%', right: '6%', bottom: '4%', containLabel: true },
+                                xAxis: { type: 'value', axisLabel: darkThemeOption.textStyle, splitLine: darkThemeOption.splitLine },
+                                yAxis: { type: 'category', data: data.map(d => d.publisher), axisLabel: darkThemeOption.textStyle },
+                                series: [{
+                                    type: 'bar',
+                                    data: data.map(d => d.count),
+                                    itemStyle: { borderRadius: [0, 4, 4, 0], color: '#10b981' }
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+                };
+
+                // 加载关联分析模块图表
+                const loadCorrelationCharts = async () => {
+                    try {
+                        const res = await fetch('/api/games/correlations');
+                        const data = (await res.json()).data || {};
+
+                        // 1. 类型与价格水平对比
+                        const gp = (data.genre_price || []).slice(0, 8);
+                        const cPriceDom = document.getElementById('chart-corr-price');
+                        if (cPriceDom) {
+                            const chart = echarts.init(cPriceDom);
+                            chartInstances['corrPrice'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...darkThemeOption.tooltip },
+                                legend: { top: '2%', textStyle: darkThemeOption.textStyle },
+                                grid: { left: '4%', right: '4%', bottom: '15%', containLabel: true },
+                                xAxis: { type: 'category', data: gp.map(d => d.genre), axisLabel: { ...darkThemeOption.textStyle, rotate: 20 } },
+                                yAxis: { type: 'value', name: '价格 (元)', axisLabel: darkThemeOption.textStyle, splitLine: darkThemeOption.splitLine },
+                                series: [
+                                    { name: '平均售价', type: 'bar', data: gp.map(d => d.mean_price), itemStyle: { color: '#f97316', borderRadius: [4, 4, 0, 0] } },
+                                    { name: '中位售价', type: 'bar', data: gp.map(d => d.median_price), itemStyle: { color: '#14b8a6', borderRadius: [4, 4, 0, 0] } }
+                                ]
+                            });
+                        }
+
+                        // 2. 类型与折扣力度对比
+                        const gd = (data.genre_discount || []).slice(0, 8);
+                        const cDiscDom = document.getElementById('chart-corr-discount');
+                        if (cDiscDom) {
+                            const chart = echarts.init(cDiscDom);
+                            chartInstances['corrDiscount'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...darkThemeOption.tooltip },
+                                legend: { top: '2%', textStyle: darkThemeOption.textStyle },
+                                grid: { left: '4%', right: '4%', bottom: '15%', containLabel: true },
+                                xAxis: { type: 'category', data: gd.map(d => d.genre), axisLabel: { ...darkThemeOption.textStyle, rotate: 20 } },
+                                yAxis: { type: 'value', name: '百分比 (%)', axisLabel: darkThemeOption.textStyle, splitLine: darkThemeOption.splitLine },
+                                series: [
+                                    { name: '打折覆盖率', type: 'bar', data: gd.map(d => d.discount_rate), itemStyle: { color: '#ec4899', borderRadius: [4, 4, 0, 0] } },
+                                    { name: '平均折让深度', type: 'line', data: gd.map(d => d.mean_discount), smooth: true, lineStyle: { width: 3, color: '#eab308' }, itemStyle: { color: '#eab308' } }
+                                ]
+                            });
+                        }
+
+                        // 3. 类型共现热力图
+                        const gm = data.genre_matrix || {};
+                        const topG = gm.top_genres || [];
+                        const matrixData = [];
+                        let maxVal = 0;
+                        topG.forEach((g1, i) => {
+                            topG.forEach((g2, j) => {
+                                const val = (gm.matrix && gm.matrix[g1] && gm.matrix[g1][g2]) || 0;
+                                if (val > maxVal) maxVal = val;
+                                matrixData.push([j, i, val]);
+                            });
+                        });
+                        const cHeatDom = document.getElementById('chart-corr-heatmap');
+                        if (cHeatDom) {
+                            const chart = echarts.init(cHeatDom);
+                            chartInstances['corrHeatmap'] = chart;
+                            chart.setOption({
+                                tooltip: {
+                                    position: 'top',
+                                    formatter: p => `${topG[p.value[1]]} + ${topG[p.value[0]]}<br/>共现频次: ${p.value[2]} 次`,
+                                    ...darkThemeOption.tooltip
+                                },
+                                grid: { left: '10%', right: '12%', top: '4%', bottom: '15%' },
+                                xAxis: { type: 'category', data: topG, splitArea: { show: true }, axisLabel: { ...darkThemeOption.textStyle, rotate: 25 } },
+                                yAxis: { type: 'category', data: topG, splitArea: { show: true }, axisLabel: darkThemeOption.textStyle },
+                                visualMap: {
+                                    min: 0,
+                                    max: maxVal || 5,
+                                    calculable: true,
+                                    orient: 'vertical',
+                                    right: '2%',
+                                    top: 'center',
+                                    textStyle: darkThemeOption.textStyle,
+                                    inRange: { color: ['#121622', '#0284c7', '#38bdf8', '#fbbf24'] }
+                                },
+                                series: [{
+                                    name: '共现频次',
+                                    type: 'heatmap',
+                                    data: matrixData,
+                                    label: { show: true, color: '#f8fafc', fontSize: 11 }
+                                }]
+                            });
+                        }
+
+                        // 4. 类型跨平台适配度对比
+                        const gpPlat = (data.genre_platform || []).slice(0, 8);
+                        const cPlatDom = document.getElementById('chart-corr-platform');
+                        if (cPlatDom) {
+                            const chart = echarts.init(cPlatDom);
+                            chartInstances['corrPlatform'] = chart;
+                            chart.setOption({
+                                tooltip: { trigger: 'axis', ...darkThemeOption.tooltip },
+                                legend: { top: '2%', textStyle: darkThemeOption.textStyle },
+                                grid: { left: '4%', right: '4%', bottom: '15%', containLabel: true },
+                                xAxis: { type: 'category', data: gpPlat.map(d => d.genre), axisLabel: { ...darkThemeOption.textStyle, rotate: 20 } },
+                                yAxis: { type: 'value', name: '支持率 (%)', axisLabel: darkThemeOption.textStyle, splitLine: darkThemeOption.splitLine },
+                                series: [
+                                    { name: 'macOS 支持率', type: 'bar', data: gpPlat.map(d => d.mac_rate), itemStyle: { color: '#38bdf8', borderRadius: [4, 4, 0, 0] } },
+                                    { name: 'Linux 支持率', type: 'bar', data: gpPlat.map(d => d.linux_rate), itemStyle: { color: '#f43f5e', borderRadius: [4, 4, 0, 0] } }
+                                ]
+                            });
+                        }
+                    } catch (e) {}
+                };
+
+                const refreshAllData = async () => {
+                    showToast('正在同步并刷新全系统数据...');
+                    await fetchSystemStatus();
+                    await fetchOverview();
+                    await fetchGameList();
+                    await loadOverviewCharts();
+                    if (currentTab.value === 'correlations') {
+                        await loadCorrelationCharts();
+                    }
+                    showToast('✦ 全量数据更新完成！');
+                };
+
+                onMounted(async () => {
+                    window.addEventListener('resize', resizeAllCharts);
+                    await fetchSystemStatus();
+                    await fetchOverview();
+                    await fetchGameList();
+                    await loadOverviewCharts();
+                });
+
+                return {
+                    currentTab,
+                    systemStatus,
+                    overview,
+                    filters,
+                    gameList,
+                    quickGenres,
+                    apiEndpoints,
+                    toastMessage,
+                    syncing,
+                    selectedGame,
+                    switchTab,
+                    calcMultiPlatformRate,
+                    formatPlatforms,
+                    handleSearch,
+                    selectGenre,
+                    changePage,
+                    openGameDetail,
+                    triggerSync,
+                    refreshAllData
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steam Data Research Lab | 基于 Google Labs 设计系统的游戏市场研究平台</title>
+    <!-- Web 字体 (Google Sans 备选 Plus Jakarta Sans & Space Grotesk) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Vue 3 & ECharts 5 -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        /* ======================================================== */
+        /* Google Labs (labs.google) 标准设计令牌 (Design Tokens)    */
+        /* 严格对照 design.md 逆向工程规范                           */
+        /* ======================================================== */
+        :root {
+            --gl-color-surface: #F3EFEA;              /* 基础砂岩暖灰底色 */
+            --gl-cat-bg: #F3EFEA;
+            --gl-color-border: #E8DFD5;               /* 浅边框与分割线 */
+            --gl-cat-accent-soft: #E8DFD5;
+            --gl-cat-accent: #DDD3C7;                 /* 灰褐色强调边框 */
+            --gl-color-card-bg: #FFFFFF;              /* 纯白卡片表面 */
+            
+            --gl-color-on-surface-contrast: #1A1A1A;  /* 高反差主标题 */
+            --gl-color-on-surface: #323232;           /* 正文主色 */
+            --gl-color-on-surface-subtle: rgba(50, 50, 50, .8); /* 副标题与简介 */
+            --gl-color-gray-dim: #75777B;             /* 辅助次级文本 */
+            --gl-color-gray-muted: #9AA0A6;           /* 弱化占位文本 */
+            
+            /* 标志性多态几何主题色 (Brand Geometry Accents) */
+            --gl-shape-hexagon: #48F08B;              /* 荧光绿 (自然与活力) */
+            --gl-shape-circle: #5E9BFF;               /* 电光浅蓝 (AI与连接) */
+            --gl-shape-square: #FFBDF9;               /* 柔浅粉 (创意与设计) */
+            --gl-shape-clover: #FCC934;               /* 暖明黄 (探索火花) */
+
+            --gl-radius-card: 24px;                   /* 卡片圆角: 2.4rem */
+            --gl-radius-pill: 9999px;                 /* 胶囊圆角: 999rem */
+            --btn-border-width: 2px;                  /* 按钮线性边框 */
+
+            --font-display: 'Google Sans', 'Space Grotesk', system-ui, sans-serif;
+            --font-body: 'Google Sans Text', 'Plus Jakarta Sans', system-ui, sans-serif;
+            --font-mono: 'Space Mono', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--gl-color-surface);
+            color: var(--gl-color-on-surface);
+            font-family: var(--font-body);
+            line-height: 1.5;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 背景几何浮动粒子微动效 (符合 design.md 5.1 节) */
+        .ambient-geometry-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .geo-shape {
+            position: absolute;
+            opacity: 0.22;
+            filter: blur(12px);
+            animation: gl-float-y 11s infinite alternate ease-in-out;
+        }
+
+        .geo-shape-1 {
+            top: 5%;
+            left: 8%;
+            width: 320px;
+            height: 320px;
+            background: var(--gl-shape-clover);
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            animation-duration: 14s;
+        }
+
+        .geo-shape-2 {
+            top: 15%;
+            right: 6%;
+            width: 380px;
+            height: 380px;
+            background: var(--gl-shape-circle);
+            border-radius: 50%;
+            animation-duration: 16s;
+            animation-delay: -3s;
+        }
+
+        .geo-shape-3 {
+            bottom: 10%;
+            left: 12%;
+            width: 360px;
+            height: 360px;
+            background: var(--gl-shape-square);
+            border-radius: 30%;
+            animation-duration: 12s;
+            animation-delay: -6s;
+        }
+
+        .geo-shape-4 {
+            bottom: 5%;
+            right: 18%;
+            width: 340px;
+            height: 340px;
+            background: var(--gl-shape-hexagon);
+            border-radius: 45%;
+            animation-duration: 18s;
+            animation-delay: -2s;
+        }
+
+        @keyframes gl-float-y {
+            0% { transform: translateY(0px) rotate(0deg); }
+            100% { transform: translateY(-30px) rotate(8deg); }
+        }
+
+        /* 页面主壳容器 */
+        .page-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 0 32px 80px;
+        }
+
+        /* ======================================================== */
+        /* 4.1 Header 顶部固定毛玻璃导航栏                           */
+        /* ======================================================== */
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 16px 0;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            background: rgba(243, 239, 234, 0.85);
+            border-bottom: 1px solid rgba(232, 223, 213, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .header-inner {
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--gl-color-on-surface-contrast);
+            cursor: pointer;
+        }
+
+        /* 四态变换品牌 Logo 图标 */
+        .brand-morph-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--gl-color-on-surface-contrast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gl-shape-clover);
+            font-size: 16px;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .header-brand:hover .brand-morph-icon {
+            transform: scale(1.15) rotate(15deg);
+        }
+
+        .brand-text-title {
+            font-family: var(--font-display);
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-text-sub {
+            font-size: 11px;
+            color: var(--gl-color-gray-dim);
+            font-family: var(--font-mono);
+            letter-spacing: 0.05em;
+        }
+
+        /* 导航锚点胶囊群 */
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-link-item {
+            padding: 8px 18px;
+            border-radius: var(--gl-radius-pill);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gl-color-on-surface);
+            text-decoration: none;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-link-item:hover {
+            color: var(--gl-color-on-surface-contrast);
+            background: rgba(0, 0, 0, 0.04);
+            border-color: var(--gl-color-border);
+        }
+
+        .nav-link-item.active {
+            background: var(--gl-color-on-surface-contrast);
+            color: #FFFFFF;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-badge-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: var(--gl-radius-pill);
+            background: #FFFFFF;
+            border: 1px solid var(--gl-color-border);
+            font-size: 12px;
+            font-family: var(--font-mono);
+            color: var(--gl-color-on-surface);
+        }
+
+        .status-dot-pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #34A853;
+            box-shadow: 0 0 6px #34A853;
+        }
+
+        .pill-cta-sm {
+            padding: 8px 18px;
+            border-radius: var(--gl-radius-pill);
+            border: 2px solid var(--gl-color-on-surface-contrast);
+            background: transparent;
+            color: var(--gl-color-on-surface-contrast);
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pill-cta-sm:hover {
+            background: var(--gl-color-on-surface-contrast);
+            color: #FFFFFF;
+        }
+
+        /* ======================================================== */
+        /* 4.2 Featured Hero 旗舰研究焦点区                          */
+        /* 包含 Segmented Progress 轮播控制器与核心结论提炼           */
+        /* ======================================================== */
+        .featured-hero-section {
+            margin: 40px 0 60px;
+        }
+
+        .segmented-progress-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .segmented-progress-item {
+            cursor: pointer;
+            padding: 8px 4px;
+        }
+
+        .progress-bar-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.08);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--gl-color-on-surface-contrast);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .segmented-progress-item.active .progress-bar-fill {
+            width: 100%;
+        }
+
+        .progress-label-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gl-color-gray-dim);
+            transition: color 0.2s;
+        }
+
+        .segmented-progress-item.active .progress-label-text {
+            color: var(--gl-color-on-surface-contrast);
+        }
+
+        /* 焦点大卡片容器 */
+        .hero-banner-card {
+            background: var(--gl-color-card-bg);
+            border: 2px solid var(--gl-color-border);
+            border-radius: var(--gl-radius-card);
+            padding: 40px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
+            display: grid;
+            grid-template-columns: 1fr 1.25fr;
+            gap: 40px;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-banner-content h2 {
+            font-family: var(--font-display);
+            font-size: 38px;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            color: var(--gl-color-on-surface-contrast);
+            margin-bottom: 16px;
+        }
+
+        .hero-desc-p {
+            font-size: 16px;
+            color: var(--gl-color-on-surface-subtle);
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .hero-badge-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: var(--gl-radius-pill);
+            background: var(--gl-color-surface);
+            border: 1px solid var(--gl-color-border);
+            font-size: 12px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .hero-chart-display-container {
+            background: var(--gl-color-surface);
+            border: 1px solid var(--gl-color-border);
+            border-radius: 18px;
+            padding: 16px;
+            width: 100%;
+            height: 380px;
+            position: relative;
+        }
+
+        /* ======================================================== */
+        /* 4.3 核心研究实验画廊 (Experiments Showcase - #experiments)*/
+        /* 35.2rem 响应式基线模块卡片                               */
+        /* ======================================================== */
+        .section-header-block {
+            margin: 64px 0 28px;
+        }
+
+        .section-tag-mono {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--gl-color-gray-dim);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .section-title-large {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--gl-color-on-surface-contrast);
+        }
+
+        .experiments-card-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 28px;
+        }
+
+        .carousel-experiment-card {
+            background: var(--gl-color-card-bg);
+            border: 2px solid var(--gl-color-border);
+            border-radius: var(--gl-radius-card);
+            padding: 28px;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .carousel-experiment-card:hover {
+            border-color: var(--gl-cat-accent);
+            transform: translateY(-4px);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.04);
+        }
+
+        .card-visual-viewport {
+            background: var(--gl-color-surface);
+            border: 1px solid var(--gl-color-border);
+            border-radius: 18px;
+            padding: 16px;
+            width: 100%;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .card-meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .pill-badge {
+            padding: 4px 12px;
+            border-radius: var(--gl-radius-pill);
+            font-size: 11.5px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .pill-badge.green { background: rgba(72, 240, 139, 0.25); color: #059669; }
+        .pill-badge.blue { background: rgba(94, 155, 255, 0.25); color: #2563EB; }
+        .pill-badge.yellow { background: rgba(252, 201, 52, 0.25); color: #D97706; }
+        .pill-badge.pink { background: rgba(255, 189, 249, 0.45); color: #D946EF; }
+
+        .card-title-h2 {
+            font-family: var(--font-display);
+            font-size: 21px;
+            font-weight: 700;
+            color: var(--gl-color-on-surface-contrast);
+            margin-bottom: 8px;
+        }
+
+        .card-desc-h3 {
+            font-size: 14.5px;
+            color: var(--gl-color-on-surface-subtle);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+
+        .card-action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 16px;
+            border-top: 1px solid var(--gl-color-border);
+        }
+
+        .pill-action-btn {
+            padding: 10px 22px;
+            border-radius: var(--gl-radius-pill);
+            border: 2px solid var(--gl-color-border);
+            background: transparent;
+            color: var(--gl-color-on-surface-contrast);
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .pill-action-btn:hover {
+            border-color: var(--gl-color-on-surface-contrast);
+            background: var(--gl-color-on-surface-contrast);
+            color: #FFFFFF;
+        }
+
+        /* ======================================================== */
+        /* 多维深度关联透视工作台 (#insights)                        */
+        /* 对齐毕业设计第七章学术规范                               */
+        /* ======================================================== */
+        .insights-matrix-container {
+            background: var(--gl-color-card-bg);
+            border: 2px solid var(--gl-color-border);
+            border-radius: var(--gl-radius-card);
+            padding: 36px;
+            margin-bottom: 40px;
+        }
+
+        .insights-nav-tabs {
+            display: flex;
+            gap: 10px;
+            border-bottom: 2px solid var(--gl-color-border);
+            padding-bottom: 16px;
+            margin-bottom: 28px;
+        }
+
+        .insight-tab-btn {
+            padding: 10px 24px;
+            border-radius: var(--gl-radius-pill);
+            border: none;
+            background: var(--gl-color-surface);
+            color: var(--gl-color-on-surface);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .insight-tab-btn.active {
+            background: var(--gl-color-on-surface-contrast);
+            color: #FFFFFF;
+        }
+
+        .insight-display-area {
+            width: 100%;
+            height: 480px;
+        }
+
+        /* ======================================================== */
+        /* 交互式数据沙盒探索中心 (#sandbox)                         */
+        /* 满足游戏清洗样本检索与详查需求                           */
+        /* ======================================================== */
+        .sandbox-panel {
+            background: var(--gl-color-card-bg);
+            border: 2px solid var(--gl-color-border);
+            border-radius: var(--gl-radius-card);
+            padding: 36px;
+            margin-bottom: 60px;
+        }
+
+        .sandbox-filter-strip {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .pill-search-input {
+            flex: 1;
+            min-width: 280px;
+            padding: 12px 24px;
+            border-radius: var(--gl-radius-pill);
+            border: 2px solid var(--gl-color-border);
+            background: var(--gl-color-surface);
+            font-size: 14px;
+            font-family: var(--font-body);
+            color: var(--gl-color-on-surface-contrast);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .pill-search-input:focus {
+            border-color: var(--gl-color-on-surface-contrast);
+            background: #FFFFFF;
+        }
+
+        .pill-select-control {
+            padding: 12px 20px;
+            border-radius: var(--gl-radius-pill);
+            border: 2px solid var(--gl-color-border);
+            background: var(--gl-color-surface);
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--gl-color-on-surface);
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* 游戏表格卡片化 */
+        .labs-data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .labs-data-table th {
+            text-align: left;
+            padding: 14px 18px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--gl-color-gray-dim);
+            border-bottom: 2px solid var(--gl-color-border);
+        }
+
+        .labs-data-table td {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--gl-color-border);
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        .labs-data-table tr:hover td {
+            background: var(--gl-color-surface);
+        }
+
+        /* ======================================================== */
+        /* 4.4 & 4.5 数据工程管线与云端设施 (#pipeline)              */
+        /* 对应 Graduation "Life beyond the Lab" 与 Pre-footer 状态 */
+        /* ======================================================== */
+        .pipeline-card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .pipeline-step-card {
+            background: var(--gl-color-card-bg);
+            border: 2px solid var(--gl-color-border);
+            border-radius: var(--gl-radius-card);
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .step-num-badge {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--gl-color-gray-dim);
+            margin-bottom: 12px;
+        }
+
+        .step-name-h3 {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gl-color-on-surface-contrast);
+            margin-bottom: 8px;
+        }
+
+        .step-desc-p {
+            font-size: 13.5px;
+            color: var(--gl-color-on-surface-subtle);
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        /* 预页脚互动四态几何体 (Pre-Footer Shapes) */
+        .interactive-shapes-prefooter {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            padding: 60px 0 20px;
+        }
+
+        .toy-geo-unit {
+            width: 72px;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .toy-geo-unit:hover {
+            transform: scale(1.25) rotate(12deg);
+        }
+
+        .shape-hex {
+            background: var(--gl-shape-hexagon);
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+        }
+
+        .shape-cir {
+            background: var(--gl-shape-circle);
+            border-radius: 50%;
+        }
+
+        .shape-squ {
+            background: var(--gl-shape-square);
+            border-radius: 18px;
+        }
+
+        .shape-clov {
+            background: var(--gl-shape-clover);
+            border-radius: 50% 50% 50% 10%;
+        }
+
+        /* 全局页脚 */
+        .app-footer-bar {
+            text-align: center;
+            padding: 40px 0;
+            border-top: 1px solid var(--gl-color-border);
+            font-size: 13px;
+            color: var(--gl-color-gray-dim);
+        }
+
+        /* 模态弹窗 */
+        .gl-modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(26, 26, 26, 0.5);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .gl-modal-window {
+            background: var(--gl-color-card-bg);
+            border: 2px solid var(--gl-color-on-surface-contrast);
+            border-radius: var(--gl-radius-card);
+            max-width: 640px;
+            width: 100%;
+            padding: 36px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 响应式断点 (对齐 design.md 第6节) */
+        @media (max-width: 1024px) {
+            .hero-banner-card { grid-template-columns: 1fr; }
+            .experiments-card-grid { grid-template-columns: 1fr; }
+            .pipeline-card-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .header-inner { flex-direction: column; gap: 14px; }
+            .segmented-progress-controls { grid-template-columns: 1fr; }
+            .page-container { padding: 0 16px 60px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 基础物理浮动几何图形层 -->
+        <div class="ambient-geometry-bg">
+            <div class="geo-shape geo-shape-1"></div>
+            <div class="geo-shape geo-shape-2"></div>
+            <div class="geo-shape geo-shape-3"></div>
+            <div class="geo-shape geo-shape-4"></div>
+        </div>
+
+        <!-- 4.1 Header 顶部固定毛玻璃导航栏 -->
+        <header class="app-header">
+            <div class="header-inner">
+                <a class="header-brand" href="#hero">
+                    <div class="brand-morph-icon">✦</div>
+                    <div>
+                        <div class="brand-text-title">Steam Labs</div>
+                        <div class="brand-text-sub">DATA RESEARCH STUDIO</div>
+                    </div>
+                </a>
+
+                <nav class="header-nav">
+                    <a class="nav-link-item" href="#hero">Overview</a>
+                    <a class="nav-link-item" href="#experiments">Experiments</a>
+                    <a class="nav-link-item" href="#insights">Insights</a>
+                    <a class="nav-link-item" href="#sandbox">Data Sandbox</a>
+                    <a class="nav-link-item" href="#pipeline">Pipeline</a>
+                </nav>
+
+                <div class="header-actions">
+                    <div class="status-badge-pill">
+                        <span class="status-dot-pulse"></span>
+                        <span>{{ systemStatus?.mysql?.connected ? 'MySQL CLOUD' : 'LOCAL CACHE' }}</span>
+                    </div>
+                    <a href="/genz" class="pill-cta-sm" style="border-color: #FF007A; color: #FF007A;" title="切换至 Gen Z 极繁赛博版">
+                        ⚡ 极繁版
+                    </a>
+                    <a href="/dark" class="pill-cta-sm" title="切换至深色极客控制台">
+                        深色版
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- 页面主工作区 -->
+        <div class="page-container">
+            
+            <!-- ========================================================= -->
+            <!-- 4.2 Featured Hero 旗舰研究焦点区                          -->
+            <!-- ========================================================= -->
+            <section id="hero" class="featured-hero-section">
+                <!-- 分段式进度轮播控制器 (Segmented Progress Controls) -->
+                <div class="segmented-progress-controls">
+                    <div 
+                        v-for="(seg, idx) in heroSegments" 
+                        :key="idx" 
+                        class="segmented-progress-item"
+                        :class="{ active: currentHeroIdx === idx }"
+                        @click="setHeroSegment(idx)"
+                    >
+                        <div class="progress-bar-track">
+                            <div class="progress-bar-fill"></div>
+                        </div>
+                        <div class="progress-label-text">{{ seg.label }}</div>
+                    </div>
+                </div>
+
+                <!-- 焦点卡片 -->
+                <div class="hero-banner-card">
+                    <div class="hero-banner-content">
+                        <span class="hero-badge-tag">{{ activeHero.tag }}</span>
+                        <h2>{{ activeHero.title }}</h2>
+                        <p class="hero-desc-p">{{ activeHero.desc }}</p>
+                        <div>
+                            <a :href="activeHero.anchor" class="pill-action-btn" style="border-color:var(--gl-color-on-surface-contrast); background:var(--gl-color-on-surface-contrast); color:#FFF;">
+                                <span>{{ activeHero.actionText }}</span>
+                                <span>→</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="hero-chart-display-container">
+                        <div id="hero-preview-chart" style="width: 100%; height: 100%;"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================================= -->
+            <!-- 4.3 核心研究实验画廊 (Experiments Showcase - #experiments) -->
+            <!-- ========================================================= -->
+            <section id="experiments">
+                <div class="section-header-block">
+                    <span class="section-tag-mono">CORE EMPIRICAL EXPERIMENTS</span>
+                    <h2 class="section-title-large">Be the first to explore the market data</h2>
+                </div>
+
+                <div class="experiments-card-grid">
+                    <!-- Exp 01: 市场年度走势实验 -->
+                    <div class="carousel-experiment-card">
+                        <div>
+                            <div class="card-meta-row">
+                                <span class="pill-badge blue">Temporal Wave</span>
+                                <span style="font-family:var(--font-mono); font-size:12px; color:var(--gl-color-gray-dim);">EXP_01</span>
+                            </div>
+                            <h3 class="card-title-h2">8.1 市场年度发行走势与潮汐节律</h3>
+                            <p class="card-desc-h3">
+                                抽取 release_date 原始文本中的发行年份分布，追踪近 3 年 Steam 游戏供给扩张速率与平台生命周期节律。
+                            </p>
+                            <div class="card-visual-viewport">
+                                <div id="chart-exp-year" style="width: 100%; height: 100%;"></div>
+                            </div>
+                        </div>
+                        <div class="card-action-bar">
+                            <span style="font-size:13px; font-weight:700;">年均供给量洞察</span>
+                            <a href="#insights" class="pill-action-btn">查看关联特征 →</a>
+                        </div>
+                    </div>
+
+                    <!-- Exp 02: 游戏品类霸权实验 -->
+                    <div class="carousel-experiment-card">
+                        <div>
+                            <div class="card-meta-row">
+                                <span class="pill-badge green">Genre Dominance</span>
+                                <span style="font-family:var(--font-mono); font-size:12px; color:var(--gl-color-gray-dim);">EXP_02</span>
+                            </div>
+                            <h3 class="card-title-h2">8.2 热门游戏类型分布 TOP 10</h3>
+                            <p class="card-desc-h3">
+                                解构多重类型复合标签（Genres），拆解独立（Indie）、动作（Action）及角色扮演（RPG）等赛道的市场渗透率与竞争烈度。
+                            </p>
+                            <div class="card-visual-viewport">
+                                <div id="chart-exp-genres" style="width: 100%; height: 100%;"></div>
+                            </div>
+                        </div>
+                        <div class="card-action-bar">
+                            <span style="font-size:13px; font-weight:700;">品类渗透率分析</span>
+                            <a href="#sandbox" class="pill-action-btn">在沙盒检索品类 →</a>
+                        </div>
+                    </div>
+
+                    <!-- Exp 03: 商业模式与价格带实验 -->
+                    <div class="carousel-experiment-card">
+                        <div>
+                            <div class="card-meta-row">
+                                <span class="pill-badge yellow">Monetization Spectrum</span>
+                                <span style="font-family:var(--font-mono); font-size:12px; color:var(--gl-color-gray-dim);">EXP_03</span>
+                            </div>
+                            <h3 class="card-title-h2">8.3 & 8.4 商业属性比例与价格梯度</h3>
+                            <p class="card-desc-h3">
+                                对比免费模式（F2P）与买断制定价，刻画游戏价格在轻度小品、中度独立到 3A 旗舰价格区间的梯级分布规律。
+                            </p>
+                            <div class="card-visual-viewport">
+                                <div id="chart-exp-pricing" style="width: 100%; height: 100%;"></div>
+                            </div>
+                        </div>
+                        <div class="card-action-bar">
+                            <span style="font-size:13px; font-weight:700;">均价: ¥{{ overview?.price_stats?.mean_price || 0 }}</span>
+                            <a href="#insights" class="pill-action-btn">价格与类型交叉 →</a>
+                        </div>
+                    </div>
+
+                    <!-- Exp 04: 开发商与发行商集中度实验 -->
+                    <div class="carousel-experiment-card">
+                        <div>
+                            <div class="card-meta-row">
+                                <span class="pill-badge pink">Industry Concentration</span>
+                                <span style="font-family:var(--font-mono); font-size:12px; color:var(--gl-color-gray-dim);">EXP_04</span>
+                            </div>
+                            <h3 class="card-title-h2">6.6 & 6.7 活跃开发与发行品牌版图</h3>
+                            <p class="card-desc-h3">
+                                统计各大活跃开发团队（Developers）与发行商（Publishers）的发行业务密集度，评估头部厂牌与长尾独立力量。
+                            </p>
+                            <div class="card-visual-viewport">
+                                <div id="chart-exp-devs" style="width: 100%; height: 100%;"></div>
+                            </div>
+                        </div>
+                        <div class="card-action-bar">
+                            <span style="font-size:13px; font-weight:700;">TOP 10 头部矩阵</span>
+                            <a href="#sandbox" class="pill-action-btn">检视开发商作品 →</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================================= -->
+            <!-- 多维深度关联透视工作台 (#insights)                        -->
+            <!-- ========================================================= -->
+            <section id="insights" style="margin-top: 80px;">
+                <div class="section-header-block">
+                    <span class="section-tag-mono">CROSS-DIMENSIONAL CORRELATION MATRIX</span>
+                    <h2 class="section-title-large">多维度关联透视工作台 (第 7 章)</h2>
+                </div>
+
+                <div class="insights-matrix-container">
+                    <div class="insights-nav-tabs">
+                        <button class="insight-tab-btn" :class="{ active: activeInsightTab === 'price' }" @click="setInsightTab('price')">
+                            7.1 类型 × 定价水平 (Genre × Price)
+                        </button>
+                        <button class="insight-tab-btn" :class="{ active: activeInsightTab === 'discount' }" @click="setInsightTab('discount')">
+                            7.2 类型 × 折扣力度 (Genre × Discount)
+                        </button>
+                        <button class="insight-tab-btn" :class="{ active: activeInsightTab === 'heatmap' }" @click="setInsightTab('heatmap')">
+                            7.6 类型共现热力矩阵 (Genre × Genre)
+                        </button>
+                        <button class="insight-tab-btn" :class="{ active: activeInsightTab === 'platform' }" @click="setInsightTab('platform')">
+                            7.3 跨平台支持度对比 (macOS / Linux)
+                        </button>
+                    </div>
+
+                    <div class="insight-display-area" id="insight-main-chart"></div>
+                </div>
+            </section>
+
+            <!-- ========================================================= -->
+            <!-- 交互式数据沙盒探索中心 (#sandbox)                         -->
+            <!-- ========================================================= -->
+            <section id="sandbox">
+                <div class="section-header-block">
+                    <span class="section-tag-mono">EMPIRICAL DATA SANDBOX</span>
+                    <h2 class="section-title-large">交互式游戏数据沙盒探索中心</h2>
+                </div>
+
+                <div class="sandbox-panel">
+                    <div class="sandbox-filter-strip">
+                        <input 
+                            type="text" 
+                            class="pill-search-input" 
+                            v-model="filters.keyword" 
+                            placeholder="🔍 检索游戏名称、研发团队或发行品牌..."
+                            @keyup.enter="handleSearch"
+                        >
+
+                        <select class="pill-select-control" v-model="filters.genre" @change="handleSearch">
+                            <option value="">全部类型 (All Genres)</option>
+                            <option v-for="g in ['Action', 'Adventure', 'RPG', 'Strategy', 'Simulation', 'Indie', 'Casual']" :key="g" :value="g">
+                                {{ g }}
+                            </option>
+                        </select>
+
+                        <select class="pill-select-control" v-model="filters.is_free" @change="handleSearch">
+                            <option value="">全商业模式</option>
+                            <option value="1">免费游玩</option>
+                            <option value="0">付费购买</option>
+                        </select>
+
+                        <select class="pill-select-control" v-model="filters.sort_by" @change="handleSearch">
+                            <option value="appid">按 AppID 排序</option>
+                            <option value="final_price">按售价排序</option>
+                            <option value="discount_percent">按折扣力度</option>
+                        </select>
+
+                        <button class="pill-action-btn" style="border-color:var(--gl-color-on-surface-contrast); background:var(--gl-color-on-surface-contrast); color:#FFF;" @click="handleSearch">
+                            检索数据
+                        </button>
+                    </div>
+
+                    <!-- 数据表格 -->
+                    <div style="overflow-x: auto;">
+                        <table class="labs-data-table">
+                            <thead>
+                                <tr>
+                                    <th>AppID</th>
+                                    <th>游戏名称 & 发行信息</th>
+                                    <th>开发团队 / 发行商</th>
+                                    <th>主要品类</th>
+                                    <th>操作系统支持</th>
+                                    <th>售价 / 折扣</th>
+                                    <th style="text-align: right;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="game in gameList.items" :key="game.appid">
+                                    <td>
+                                        <a :href="'https://store.steampowered.com/app/' + game.appid" target="_blank" style="font-family:var(--font-mono); font-weight:700; color:var(--gl-shape-circle); text-decoration:none;">
+                                            #{{ game.appid }} ↗
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight:700; color:var(--gl-color-on-surface-contrast);">{{ game.name }}</div>
+                                        <div style="font-size:12px; color:var(--gl-color-gray-dim);">{{ game.release_date || '未知' }}</div>
+                                    </td>
+                                    <td>
+                                        <div style="font-size:13px; color:var(--gl-color-on-surface-subtle);">
+                                            <div>研: {{ game.developers || '暂无' }}</div>
+                                            <div>发: {{ game.publishers || '暂无' }}</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span v-for="g in (game.genres ? game.genres.split(';').slice(0, 3) : [])" :key="g" style="display:inline-block; padding:2px 8px; border-radius:12px; background:var(--gl-color-surface); font-size:11px; margin-right:4px;">
+                                            {{ g.trim() }}
+                                        </span>
+                                    </td>
+                                    <td style="font-family:var(--font-mono); font-size:12px;">
+                                        {{ formatPlat(game.platforms) }}
+                                    </td>
+                                    <td>
+                                        <span v-if="game.is_free" style="font-weight:700; color:#059669;">免费</span>
+                                        <span v-else style="font-weight:700;">
+                                            ¥{{ game.final_price }}
+                                            <span v-if="game.discount_percent > 0" style="color:#EA4335; font-size:11px; margin-left:4px;">
+                                                -{{ game.discount_percent }}%
+                                            </span>
+                                        </span>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <button class="pill-action-btn" style="padding:6px 14px; font-size:12px;" @click="inspectGame(game)">
+                                            检视详情
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 分页 -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:24px;">
+                        <span style="font-size:13px; color:var(--gl-color-gray-dim); font-family:var(--font-mono);">
+                            共 {{ gameList.total }} 条样本，第 {{ filters.page }} / {{ gameList.total_pages }} 页
+                        </span>
+                        <div style="display:flex; gap:8px;">
+                            <button class="pill-action-btn" :disabled="filters.page <= 1" @click="changePage(filters.page - 1)">
+                                ← PREV
+                            </button>
+                            <button class="pill-action-btn" :disabled="filters.page >= gameList.total_pages" @click="changePage(filters.page + 1)">
+                                NEXT →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================================= -->
+            <!-- 4.4 数据工程管线与云端设施 (#pipeline)                    -->
+            <!-- 对应 Graduation 毕业殿堂区与生命周期叙事                    -->
+            <!-- ========================================================= -->
+            <section id="pipeline">
+                <div class="section-header-block">
+                    <span class="section-tag-mono">DATA PIPELINE & REPRODUCIBILITY</span>
+                    <h2 class="section-title-large">数据采集、清洗与云端持久化管线</h2>
+                </div>
+
+                <div class="pipeline-card-grid">
+                    <div class="pipeline-step-card">
+                        <div>
+                            <div class="step-num-badge">STAGE 01 / CRAWLER</div>
+                            <h3 class="step-name-h3">Steam Web API 采集</h3>
+                            <p class="step-desc-p">
+                                覆盖 121,570+ AppID 索引，支持断点续采、速率动态节流限速（0.5s）与 429 熔断防护。
+                            </p>
+                        </div>
+                        <div style="font-family:var(--font-mono); font-size:12px; color:var(--gl-color-gray-dim);">
+                            已索引 AppID: 121,570 个
+                        </div>
+                    </div>
+
+                    <div class="pipeline-step-card">
+                        <div>
+                            <div class="step-num-badge">STAGE 02 / PREPROCESSING</div>
+                            <h3 class="step-name-h3">数据规范化清洗</h3>
+                            <p class="step-desc-p">
+                                严格执行缺失值过滤、价格异常纠偏、日期原貌保留，产出 steam_games_recent_clean.csv。
+                            </p>
+                        </div>
+                        <div style="font-family:var(--font-mono); font-size:12px; color:#059669; font-weight:700;">
+                            清洗规范度: 100% 对齐《要求.md》
+                        </div>
+                    </div>
+
+                    <div class="pipeline-step-card">
+                        <div>
+                            <div class="step-num-badge">STAGE 03 / PERSISTENCE</div>
+                            <h3 class="step-name-h3">云端 MySQL 持久化</h3>
+                            <p class="step-desc-p">
+                                部署在 20.48.117.195 (1Panel 管理)，具备双模容灾降级，支持一键实时同步。
+                            </p>
+                        </div>
+                        <div>
+                            <button class="pill-action-btn" :disabled="syncing" @click="syncToDb">
+                                <span>{{ syncing ? '同步中...' : '一键同步至 MySQL' }}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4.5 预页脚互动四态几何体 (Pre-Footer Shapes) -->
+            <section class="interactive-shapes-prefooter">
+                <div class="toy-geo-unit shape-hex" title="Hexagon: 算法活力"></div>
+                <div class="toy-geo-unit shape-cir" title="Circle: 直觉连接"></div>
+                <div class="toy-geo-unit shape-squ" title="Square: 创意美学"></div>
+                <div class="toy-geo-unit shape-clov" title="Clover: 探索火花"></div>
+            </section>
+
+            <!-- 全局页脚 -->
+            <footer class="app-footer-bar">
+                <p>Steam Data Research Lab · 毕业设计学术工程系统</p>
+                <p style="margin-top:6px; font-family:var(--font-mono); font-size:11.5px;">
+                    Powered by Flask, Pandas, ECharts 5, Vue 3 & Google Labs Design Tokens
+                </p>
+            </footer>
+        </div>
+
+        <!-- 单个游戏详情弹窗 -->
+        <div class="gl-modal-backdrop" v-if="inspectedGame" @click.self="inspectedGame = null">
+            <div class="gl-modal-window">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="font-family:var(--font-display); font-size:24px; font-weight:800;">{{ inspectedGame.name }}</h3>
+                    <button class="pill-action-btn" style="padding:4px 10px;" @click="inspectedGame = null">✕</button>
+                </div>
+                <div style="font-size:14px; line-height:2;">
+                    <div><strong>AppID:</strong> #{{ inspectedGame.appid }}</div>
+                    <div><strong>发售日期:</strong> {{ inspectedGame.release_date || '未知' }}</div>
+                    <div><strong>开发团队:</strong> {{ inspectedGame.developers || '暂无数据' }}</div>
+                    <div><strong>发行商:</strong> {{ inspectedGame.publishers || '暂无数据' }}</div>
+                    <div><strong>类型:</strong> {{ inspectedGame.genres }}</div>
+                    <div><strong>平台:</strong> {{ formatPlat(inspectedGame.platforms) }}</div>
+                    <div><strong>售价:</strong> ¥{{ inspectedGame.final_price }} (原价: ¥{{ inspectedGame.initial_price }})</div>
+                </div>
+                <div style="margin-top:24px; text-align:right;">
+                    <a :href="'https://store.steampowered.com/app/' + inspectedGame.appid" target="_blank" class="pill-action-btn" style="border-color:var(--gl-color-on-surface-contrast); background:var(--gl-color-on-surface-contrast); color:#FFF;">
+                        前往 Steam 商店 ↗
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vue 3 与 ECharts 业务逻辑 -->
+    <script>
+        const { createApp, ref, computed, onMounted, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                const systemStatus = ref(null);
+                const overview = ref(null);
+                const syncing = ref(false);
+                const inspectedGame = ref(null);
+
+                // 焦点轮播控制
+                const currentHeroIdx = ref(0);
+                const heroSegments = [
+                    {
+                        label: '01 / 市场供给演变',
+                        tag: 'Temporal Dynamics',
+                        title: '近 3 年 Steam 游戏供给年化扩张节律',
+                        desc: '统计清洗样本中各年份发行数量。数据反映出在后疫情时代与独立游戏开发引擎普及的推动下，Steam 平台保持高速供给增长。',
+                        anchor: '#experiments',
+                        actionText: '查看走势实验'
+                    },
+                    {
+                        label: '02 / 独立品类渗透',
+                        tag: 'Genre Penetration',
+                        title: '独立 (Indie) 与动作类赛道的压倒性优势',
+                        desc: '多标签拆解显示，独立与动作类型覆盖了超过 60% 的新游戏。轻量化创意玩法与敏捷开发正在重塑全球数字游戏产品矩阵。',
+                        anchor: '#experiments',
+                        actionText: '探索品类分布'
+                    },
+                    {
+                        label: '03 / 商业折让机制',
+                        tag: 'Monetization Mechanics',
+                        title: '买断制基础定价与频繁折扣常态化',
+                        desc: '主流定价集中在 1~70 元阶梯，中位售价平易近人。折扣促销已成为开发团队换取曝光与长尾流量的标准运营动作。',
+                        anchor: '#insights',
+                        actionText: '深入透视工作台'
+                    }
+                ];
+
+                const activeHero = computed(() => heroSegments[currentHeroIdx.value]);
+
+                // 检索与筛选状态
+                const filters = ref({
+                    keyword: '',
+                    genre: '',
+                    is_free: '',
+                    sort_by: 'appid',
+                    order: 'desc',
+                    page: 1,
+                    page_size: 10
+                });
+
+                const gameList = ref({ total: 0, page: 1, page_size: 10, total_pages: 1, items: [] });
+                const activeInsightTab = ref('price');
+                const chartInstances = {};
+
+                // Google Labs 标志性浅色图表主题预设 (基于 design.md 配色)
+                const glChartTheme = {
+                    textStyle: { color: '#5F6368', fontFamily: 'Plus Jakarta Sans, sans-serif' },
+                    splitLine: { lineStyle: { color: 'rgba(0, 0, 0, 0.06)', type: 'dashed' } },
+                    tooltip: {
+                        backgroundColor: '#FFFFFF',
+                        borderColor: '#E8DFD5',
+                        borderWidth: 1.5,
+                        textStyle: { color: '#1A1A1A' },
+                        shadowBlur: 16,
+                        shadowColor: 'rgba(0, 0, 0, 0.06)'
+                    }
+                };
+
+                const formatPlat = (p) => {
+                    if (!p) return 'Win';
+                    const list = [];
+                    const s = p.toLowerCase();
+                    if (s.includes('win')) list.push('Win');
+                    if (s.includes('mac')) list.push('Mac');
+                    if (s.includes('linux')) list.push('Linux');
+                    return list.join(' / ') || 'Win';
+                };
+
+                const setHeroSegment = (idx) => {
+                    currentHeroIdx.value = idx;
+                    renderHeroPreviewChart();
+                };
+
+                const setInsightTab = (tab) => {
+                    activeInsightTab.value = tab;
+                    nextTick(() => renderInsightTabChart());
+                };
+
+                const fetchStatus = async () => {
+                    try {
+                        const res = await fetch('/api/system/status');
+                        systemStatus.value = (await res.json()).data;
+                    } catch (e) {}
+                };
+
+                const fetchOverview = async () => {
+                    try {
+                        const res = await fetch('/api/games/overview');
+                        overview.value = (await res.json()).data;
+                    } catch (e) {}
+                };
+
+                const fetchGameList = async () => {
+                    try {
+                        const p = new URLSearchParams(filters.value);
+                        const res = await fetch('/api/games/list?' + p.toString());
+                        gameList.value = (await res.json()).data;
+                    } catch (e) {}
+                };
+
+                const handleSearch = () => {
+                    filters.value.page = 1;
+                    fetchGameList();
+                };
+
+                const changePage = (p) => {
+                    filters.value.page = p;
+                    fetchGameList();
+                };
+
+                const inspectGame = (g) => {
+                    inspectedGame.value = g;
+                };
+
+                const syncToDb = async () => {
+                    syncing.value = true;
+                    try {
+                        await fetch('/api/db/sync', { method: 'POST' });
+                        await fetchStatus();
+                        alert('✦ 数据已成功同步至 MySQL 数据库！');
+                    } catch (e) {
+                        alert('同步异常');
+                    } finally {
+                        syncing.value = false;
+                    }
+                };
+
+                // 渲染 Hero 动态预览图表
+                const renderHeroPreviewChart = async () => {
+                    const dom = document.getElementById('hero-preview-chart');
+                    if (!dom) return;
+                    let chart = chartInstances['heroPreview'];
+                    if (!chart) {
+                        chart = echarts.init(dom);
+                        chartInstances['heroPreview'] = chart;
+                    }
+
+                    if (currentHeroIdx.value === 0) {
+                        // 发行趋势平滑曲线
+                        const res = await fetch('/api/games/year');
+                        const data = (await res.json()).data || [];
+                        chart.setOption({
+                            tooltip: { trigger: 'axis', ...glChartTheme.tooltip },
+                            grid: { left: '4%', right: '4%', bottom: '8%', containLabel: true },
+                            xAxis: { type: 'category', data: data.map(d => d.year + '年'), axisLabel: glChartTheme.textStyle },
+                            yAxis: { type: 'value', axisLabel: glChartTheme.textStyle, splitLine: glChartTheme.splitLine },
+                            series: [{
+                                type: 'line',
+                                data: data.map(d => d.count),
+                                smooth: true,
+                                symbolSize: 8,
+                                lineStyle: { width: 4, color: '#1A1A1A' },
+                                itemStyle: { color: '#5E9BFF', borderWidth: 2, borderColor: '#1A1A1A' },
+                                areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: 'rgba(94, 155, 255, 0.4)' }, { offset: 1, color: 'rgba(94, 155, 255, 0.0)' }]) }
+                            }]
+                        }, true);
+                    } else if (currentHeroIdx.value === 1) {
+                        // 类型渗透条形
+                        const res = await fetch('/api/games/genres?limit=6');
+                        const data = ((await res.json()).data || []).reverse();
+                        chart.setOption({
+                            tooltip: { trigger: 'axis', ...glChartTheme.tooltip },
+                            grid: { left: '4%', right: '8%', bottom: '4%', containLabel: true },
+                            xAxis: { type: 'value', axisLabel: glChartTheme.textStyle, splitLine: glChartTheme.splitLine },
+                            yAxis: { type: 'category', data: data.map(d => d.genre), axisLabel: glChartTheme.textStyle },
+                            series: [{
+                                type: 'bar',
+                                data: data.map(d => d.count),
+                                itemStyle: { borderRadius: [0, 8, 8, 0], color: '#48F08B' }
+                            }]
+                        }, true);
+                    } else {
+                        // 价格与折扣
+                        const res = await fetch('/api/games/prices');
+                        const dist = (await res.json()).data?.distribution || [];
+                        chart.setOption({
+                            tooltip: { trigger: 'axis', ...glChartTheme.tooltip },
+                            grid: { left: '4%', right: '4%', bottom: '15%', containLabel: true },
+                            xAxis: { type: 'category', data: dist.map(d => d.range.split('(')[0]), axisLabel: { ...glChartTheme.textStyle, rotate: 18 } },
+                            yAxis: { type: 'value', axisLabel: glChartTheme.textStyle, splitLine: glChartTheme.splitLine },
+                            series: [{
+                                type: 'bar',
+                                data: dist.map(d => d.count),
+                                itemStyle: { borderRadius: [6, 6, 0, 0], color: '#FCC934' }
+                            }]
+                        }, true);
+                    }
+                };
+
+                // 渲染 4 大研究实验画廊图表
+                const renderExperimentCharts = async () => {
+                    // Exp 01: 年度趋势
+                    try {
+                        const res = await fetch('/api/games/year');
+                        const data = (await res.json()).data || [];
+                        const dom = document.getElementById('chart-exp-year');
+                        if (dom) {
+                            const c = echarts.init(dom);
+                            chartInstances['expYear'] = c;
+                            c.setOption({
+                                tooltip: { trigger: 'axis', ...glChartTheme.tooltip },
+                                grid: { left: '4%', right: '4%', bottom: '8%', containLabel: true },
+                                xAxis: { type: 'category', data: data.map(d => d.year + '年'), axisLabel: glChartTheme.textStyle },
+                                yAxis: { type: 'value', axisLabel: glChartTheme.textStyle, splitLine: glChartTheme.splitLine },
+                                series: [{
+                                    type: 'line',
+                                    data: data.map(d => d.count),
+                                    smooth: true,
+                                    lineStyle: { width: 3.5, color: '#5E9BFF' },
+                                    itemStyle: { color: '#5E9BFF' },
+                                    areaStyle: { color: 'rgba(94, 155, 255, 0.2)' }
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // Exp 02: 热门类型
+                    try {
+                        const res = await fetch('/api/games/genres?limit=8');
+                        const data = ((await res.json()).data || []).reverse();
+                        const dom = document.getElementById('chart-exp-genres');
+                        if (dom) {
+                            const c = echarts.init(dom);
+                            chartInstances['expGenres'] = c;
+                            c.setOption({
+                                tooltip: { trigger: 'axis', ...glChartTheme.tooltip },
+                                grid: { left: '4%', right: '6%', bottom: '4%', containLabel: true },
+                                xAxis: { type: 'value', axisLabel: glChartTheme.textStyle, splitLine: glChartTheme.splitLine },
+                                yAxis: { type: 'category', data: data.map(d => d.genre), axisLabel: glChartTheme.textStyle },
+                                series: [{
+                                    type: 'bar',
+                                    data: data.map(d => d.count),
+                                    itemStyle: { borderRadius: [0, 6, 6, 0], color: '#48F08B' }
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // Exp 03: 商业模式环形
+                    try {
+                        const res = await fetch('/api/games/prices');
+                        const data = (await res.json()).data || {};
+                        const dom = document.getElementById('chart-exp-pricing');
+                        if (dom) {
+                            const c = echarts.init(dom);
+                            chartInstances['expPricing'] = c;
+                            c.setOption({
+                                tooltip: { trigger: 'item', ...glChartTheme.tooltip },
+                                legend: { bottom: '0%', textStyle: glChartTheme.textStyle },
+                                series: [{
+                                    type: 'pie',
+                                    radius: ['45%', '70%'],
+                                    center: ['50%', '42%'],
+                                    data: [
+                                        { value: data.free_count || 0, name: '免费游玩', itemStyle: { color: '#48F08B' } },
+                                        { value: data.paid_count || 0, name: '买断付费', itemStyle: { color: '#FFBDF9' } }
+                                    ]
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+
+                    // Exp 04: 开发商 TOP 6
+                    try {
+                        const res = await fetch('/api/games/developers?limit=6');
+                        const data = ((await res.json()).data || []).reverse();
+                        const dom = document.getElementById('chart-exp-devs');
+                        if (dom) {
+                            const c = echarts.init(dom);
+                            chartInstances['expDevs'] = c;
+                            c.setOption({
+                                tooltip: { trigger: 'axis', ...glChartTheme.tooltip },
+                                grid: { left: '4%', right: '6%', bottom: '4%', containLabel: true },
+                                xAxis: { type: 'value', axisLabel: glChartTheme.textStyle, splitLine: glChartTheme.splitLine },
+                                yAxis: { type: 'category', data: data.map(d => d.developer), axisLabel: glChartTheme.textStyle },
+                                series: [{
+                                    type: 'bar',
+                                    data: data.map(d => d.count),
+                                    itemStyle: { borderRadius: [0, 6, 6, 0], color: '#FCC934' }
+                                }]
+                            });
+                        }
+                    } catch (e) {}
+                };
+
+                // 渲染多维关联透视工作台
+                const renderInsightTabChart = async () => {
+                    const dom = document.getElementById('insight-main-chart');
+                    if (!dom) return;
+                    let chart = chartInstances['insightMain'];
+                    if (!chart) {
+                        chart = echarts.init(dom);
+                        chartInstances['insightMain'] = chart;
+                    }
+
+                    const res = await fetch('/api/games/correlations');
+                    const corr = (await res.json()).data || {};
+
+                    if (activeInsightTab.value === 'price') {
+                        const gp = (corr.genre_price || []).slice(0, 8);
+                        chart.setOption({
+                            tooltip: { trigger: 'axis', ...glChartTheme.tooltip },
+                            legend: { top: '2%', textStyle: glChartTheme.textStyle },
+                            grid: { left: '4%', right: '4%', bottom: '15%', containLabel: true },
+                            xAxis: { type: 'category', data: gp.map(d => d.genre), axisLabel: { ...glChartTheme.textStyle, rotate: 18 } },
+                            yAxis: { type: 'value', name: '价格 (元)', axisLabel: glChartTheme.textStyle, splitLine: glChartTheme.splitLine },
+                            series: [
+                                { name: '平均售价', type: 'bar', data: gp.map(d => d.mean_price), itemStyle: { color: '#FCC934', borderRadius: [4, 4, 0, 0] } },
+                                { name: '中位售价', type: 'bar', data: gp.map(d => d.median_price), itemStyle: { color: '#48F08B', borderRadius: [4, 4, 0, 0] } }
+                            ]
+                        }, true);
+                    } else if (activeInsightTab.value === 'discount') {
+                        const gd = (corr.genre_discount || []).slice(0, 8);
+                        chart.setOption({
+                            tooltip: { trigger: 'axis', ...glChartTheme.tooltip },
+                            legend: { top: '2%', textStyle: glChartTheme.textStyle },
+                            grid: { left: '4%', right: '4%', bottom: '15%', containLabel: true },
+                            xAxis: { type: 'category', data: gd.map(d => d.genre), axisLabel: { ...glChartTheme.textStyle, rotate: 18 } },
+                            yAxis: { type: 'value', name: '比率 (%)', axisLabel: glChartTheme.textStyle, splitLine: glChartTheme.splitLine },
+                            series: [
+                                { name: '打折覆盖率', type: 'bar', data: gd.map(d => d.discount_rate), itemStyle: { color: '#FFBDF9', borderRadius: [4, 4, 0, 0] } },
+                                { name: '平均折让深度', type: 'line', data: gd.map(d => d.mean_discount), smooth: true, lineStyle: { width: 3, color: '#1A1A1A' }, itemStyle: { color: '#1A1A1A' } }
+                            ]
+                        }, true);
+                    } else if (activeInsightTab.value === 'heatmap') {
+                        const gm = corr.genre_matrix || {};
+                        const topG = gm.top_genres || [];
+                        const mat = [];
+                        let maxVal = 0;
+                        topG.forEach((g1, i) => {
+                            topG.forEach((g2, j) => {
+                                const v = (gm.matrix && gm.matrix[g1] && gm.matrix[g1][g2]) || 0;
+                                if (v > maxVal) maxVal = v;
+                                mat.push([j, i, v]);
+                            });
+                        });
+                        chart.setOption({
+                            tooltip: {
+                                position: 'top',
+                                formatter: p => `${topG[p.value[1]]} + ${topG[p.value[0]]}<br/>共现频次: ${p.value[2]} 款`,
+                                ...glChartTheme.tooltip
+                            },
+                            grid: { left: '10%', right: '12%', top: '4%', bottom: '15%' },
+                            xAxis: { type: 'category', data: topG, splitArea: { show: true }, axisLabel: { ...glChartTheme.textStyle, rotate: 22 } },
+                            yAxis: { type: 'category', data: topG, splitArea: { show: true }, axisLabel: glChartTheme.textStyle },
+                            visualMap: {
+                                min: 0,
+                                max: maxVal || 5,
+                                calculable: true,
+                                orient: 'vertical',
+                                right: '2%',
+                                top: 'center',
+                                textStyle: glChartTheme.textStyle,
+                                inRange: { color: ['#FFFFFF', '#D1E3FF', '#5E9BFF', '#1A1A1A'] }
+                            },
+                            series: [{ name: '共现热力', type: 'heatmap', data: mat, label: { show: true, color: '#1A1A1A', fontSize: 11 } }]
+                        }, true);
+                    } else {
+                        const gpPlat = (corr.genre_platform || []).slice(0, 8);
+                        chart.setOption({
+                            tooltip: { trigger: 'axis', ...glChartTheme.tooltip },
+                            legend: { top: '2%', textStyle: glChartTheme.textStyle },
+                            grid: { left: '4%', right: '4%', bottom: '15%', containLabel: true },
+                            xAxis: { type: 'category', data: gpPlat.map(d => d.genre), axisLabel: { ...glChartTheme.textStyle, rotate: 18 } },
+                            yAxis: { type: 'value', name: '支持率 (%)', axisLabel: glChartTheme.textStyle, splitLine: glChartTheme.splitLine },
+                            series: [
+                                { name: 'macOS 支持率', type: 'bar', data: gpPlat.map(d => d.mac_rate), itemStyle: { color: '#5E9BFF', borderRadius: [4, 4, 0, 0] } },
+                                { name: 'Linux 支持率', type: 'bar', data: gpPlat.map(d => d.linux_rate), itemStyle: { color: '#EA4335', borderRadius: [4, 4, 0, 0] } }
+                            ]
+                        }, true);
+                    }
+                };
+
+                onMounted(async () => {
+                    window.addEventListener('resize', () => {
+                        Object.values(chartInstances).forEach(c => c && c.resize());
+                    });
+                    await fetchStatus();
+                    await fetchOverview();
+                    await fetchGameList();
+                    await renderHeroPreviewChart();
+                    await renderExperimentCharts();
+                    await renderInsightTabChart();
+                });
+
+                return {
+                    systemStatus,
+                    overview,
+                    heroSegments,
+                    currentHeroIdx,
+                    activeHero,
+                    filters,
+                    gameList,
+                    activeInsightTab,
+                    syncing,
+                    inspectedGame,
+                    setHeroSegment,
+                    setInsightTab,
+                    handleSearch,
+                    changePage,
+                    inspectGame,
+                    formatPlat,
+                    syncToDb
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
