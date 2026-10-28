@@ -1,8 +1,14 @@
+import sys
 import os
 import re
 import json
 import pandas as pd
+import numpy as np
 from collections import Counter
+
+# 解决 Windows 控制台打印特殊字符编码异常问题
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(errors="replace")
 
 
 # =========================
@@ -374,6 +380,225 @@ def analyze_genre_genre_matrix(df):
     }
 
 
+# ========================================================
+# 第 8 章：数字游戏经济学与商业产值深度洞察 (5大核心商业维度)
+# ========================================================
+
+# 8.1 细分流派商业产值与吸金矩阵 (Genre Commercial Value Matrix)
+def analyze_genre_revenue(df):
+    print("\n================== 8.1 细分流派商业产值与吸金矩阵 ==================")
+    genre_data = {}
+    for _, row in df.iterrows():
+        genres_str = str(row.get("genres", ""))
+        if not genres_str or genres_str == "nan":
+            continue
+        genres = [g.strip() for g in genres_str.split(";") if g.strip()]
+        sales = float(row.get("estimated_sales", 0))
+        rev = float(row.get("estimated_revenue", 0))
+        for g in genres:
+            if g not in genre_data:
+                genre_data[g] = {"sales": [], "revenue": []}
+            genre_data[g]["sales"].append(sales)
+            genre_data[g]["revenue"].append(rev)
+
+    results = []
+    for g, metrics in genre_data.items():
+        count = len(metrics["sales"])
+        total_rev = sum(metrics["revenue"])
+        total_sales = sum(metrics["sales"])
+        median_rev = float(pd.Series(metrics["revenue"]).median()) if count > 0 else 0.0
+        avg_rev = total_rev / count if count > 0 else 0.0
+        results.append({
+            "genre": g,
+            "game_count": count,
+            "total_revenue": round(total_rev, 2),
+            "total_sales": int(total_sales),
+            "median_revenue": round(median_rev, 2),
+            "avg_revenue": round(avg_rev, 2)
+        })
+
+    # 按总流水降序排列
+    results.sort(key=lambda x: x["total_revenue"], reverse=True)
+    return results[:15]
+
+
+# 8.2 市场二八定律与长尾垄断格局 (Pareto Principle & Lorenz Curve)
+def analyze_pareto_distribution(df):
+    print("\n================== 8.2 市场二八定律与长尾垄断分析 ==================")
+    if len(df) == 0:
+        return {}
+
+    sorted_rev = df["estimated_revenue"].sort_values(ascending=False).values
+    total_rev = sorted_rev.sum()
+    n = len(sorted_rev)
+
+    # 计算各头部梯队的营收贡献率
+    tiers = [
+        {"tier": "Top 1%", "pct": 0.01},
+        {"tier": "Top 5%", "pct": 0.05},
+        {"tier": "Top 10%", "pct": 0.10},
+        {"tier": "Top 20%", "pct": 0.20},
+        {"tier": "Top 50%", "pct": 0.50},
+    ]
+    tier_results = []
+    for t in tiers:
+        k = max(1, int(n * t["pct"]))
+        rev_share = (sorted_rev[:k].sum() / total_rev * 100) if total_rev > 0 else 0.0
+        tier_results.append({
+            "tier": t["tier"],
+            "count": k,
+            "revenue_share": round(rev_share, 2)
+        })
+
+    # 计算基尼系数 (Gini Coefficient)
+    asc_rev = np.sort(sorted_rev)
+    index = np.arange(1, n + 1)
+    if total_rev > 0:
+        gini = ((2 * np.sum(index * asc_rev)) / (n * total_rev)) - ((n + 1) / n)
+        gini = max(0.0, min(1.0, float(gini)))
+    else:
+        gini = 0.0
+
+    # 营收分位数生存线 (CNY)
+    quantiles = {
+        "p25": round(float(df["estimated_revenue"].quantile(0.25)), 2),
+        "median": round(float(df["estimated_revenue"].median()), 2),
+        "p75": round(float(df["estimated_revenue"].quantile(0.75)), 2),
+        "p90": round(float(df["estimated_revenue"].quantile(0.90)), 2),
+        "max": round(float(df["estimated_revenue"].max()), 2),
+    }
+
+    return {
+        "gini_coefficient": round(gini, 4),
+        "concentration_tiers": tier_results,
+        "quantiles": quantiles
+    }
+
+
+# 8.3 价格—销量弹性与黄金定价区间 (Price-Sales Elasticity)
+def analyze_price_elasticity(df):
+    print("\n================== 8.3 价格—销量弹性与黄金定价带 ==================")
+    tiers_def = [
+        ("免费 (0元)", lambda p: p == 0),
+        ("低价探索区 (1~20元)", lambda p: 0 < p <= 20),
+        ("标准独立区 (21~45元)", lambda p: 20 < p <= 45),
+        ("中端进阶区 (46~80元)", lambda p: 45 < p <= 80),
+        ("高阶精品区 (81~150元)", lambda p: 80 < p <= 150),
+        ("商业3A/溢价区 (>150元)", lambda p: p > 150),
+    ]
+
+    results = []
+    for label, condition in tiers_def:
+        sub = df[df["final_price"].apply(condition)]
+        count = len(sub)
+        total_rev = float(sub["estimated_revenue"].sum()) if count > 0 else 0.0
+        avg_sales = float(sub["estimated_sales"].mean()) if count > 0 else 0.0
+        median_sales = float(sub["estimated_sales"].median()) if count > 0 else 0.0
+        avg_rev = total_rev / count if count > 0 else 0.0
+        results.append({
+            "tier_label": label,
+            "count": count,
+            "avg_sales": int(avg_sales),
+            "median_sales": int(median_sales),
+            "total_revenue": round(total_rev, 2),
+            "avg_revenue": round(avg_rev, 2)
+        })
+
+    return results
+
+
+# 8.4 口碑受众与商业表现的相关性 (Review Sentiment vs Sales Correlation)
+def analyze_review_sales_correlation(df):
+    print("\n================== 8.4 口碑受众与商业表现的相关性 ==================")
+    active = df[df["total_reviews"] > 0].copy()
+    if len(active) < 2:
+        return {"pearson_corr": 0.0, "spearman_corr": 0.0, "sentiment_tiers": []}
+
+    pearson_corr = float(active["positive_ratio"].corr(active["estimated_sales"], method="pearson"))
+    spearman_corr = float(active["positive_ratio"].corr(active["estimated_sales"], method="spearman"))
+
+    # 按好评率区间分层
+    sentiment_bins = [
+        ("好评如潮 (95%~100%)", lambda r: r >= 95),
+        ("特别好评 (80%~94%)", lambda r: 80 <= r < 95),
+        ("多半好评 (70%~79%)", lambda r: 70 <= r < 80),
+        ("褒贬不一 (40%~69%)", lambda r: 40 <= r < 70),
+        ("多半差评 (<40%)", lambda r: r < 40),
+    ]
+
+    tier_stats = []
+    for label, cond in sentiment_bins:
+        sub = active[active["positive_ratio"].apply(cond)]
+        count = len(sub)
+        avg_sales = float(sub["estimated_sales"].mean()) if count > 0 else 0.0
+        median_sales = float(sub["estimated_sales"].median()) if count > 0 else 0.0
+        tier_stats.append({
+            "tier": label,
+            "count": count,
+            "avg_sales": int(avg_sales),
+            "median_sales": int(median_sales)
+        })
+
+    return {
+        "pearson_corr": round(pearson_corr, 4) if pd.notna(pearson_corr) else 0.0,
+        "spearman_corr": round(spearman_corr, 4) if pd.notna(spearman_corr) else 0.0,
+        "sentiment_tiers": tier_stats
+    }
+
+
+# 8.5 研发与发行商业生态格局 (Publishers Tier & Survival Analysis)
+def analyze_publisher_tiers(df):
+    print("\n================== 8.5 研发与发行商业生态图鉴 ==================")
+    # 区分独立自发行与第三方商业发行
+    is_self = (df["publishers"].fillna("").astype(str).str.strip().str.lower() ==
+               df["developers"].fillna("").astype(str).str.strip().str.lower()) | (df["publishers"] == "")
+
+    self_games = df[is_self]
+    pub_games = df[~is_self]
+
+    def get_group_stats(group_df):
+        count = len(group_df)
+        if count == 0:
+            return {"count": 0, "median_revenue": 0.0, "avg_revenue": 0.0, "hit_rate_pct": 0.0}
+        hits = (group_df["estimated_sales"] >= 50000).sum()
+        return {
+            "count": count,
+            "median_revenue": round(float(group_df["estimated_revenue"].median()), 2),
+            "avg_revenue": round(float(group_df["estimated_revenue"].mean()), 2),
+            "hit_rate_pct": round(float(hits / count * 100), 2)
+        }
+
+    comparison = {
+        "self_published": get_group_stats(self_games),
+        "commercial_published": get_group_stats(pub_games)
+    }
+
+    # Top 15 发行商总流水排行
+    pub_counter = Counter()
+    pub_revenue = Counter()
+    for _, row in df.iterrows():
+        pubs = str(row.get("publishers", ""))
+        rev = float(row.get("estimated_revenue", 0))
+        for p in pubs.split(";"):
+            p = p.strip()
+            if p and p.lower() != "nan":
+                pub_counter[p] += 1
+                pub_revenue[p] += rev
+
+    top_publishers = []
+    for pub, total_rev in pub_revenue.most_common(15):
+        top_publishers.append({
+            "publisher": pub,
+            "game_count": pub_counter[pub],
+            "total_revenue": round(total_rev, 2)
+        })
+
+    return {
+        "publishing_mode_comparison": comparison,
+        "top_publishers_by_revenue": top_publishers
+    }
+
+
 # =========================
 # 保存分析结果为 JSON (供 Flask 后端与 ECharts 使用)
 # =========================
@@ -392,29 +617,48 @@ def save_analysis_json(summary_data):
 # =========================
 
 def main():
-    df = load_clean_data()
-    if df is None:
-        return
+    import io
+    quiet = "-q" in sys.argv or "--quiet" in sys.argv
+    old_stdout = sys.stdout
 
-    summary = {
-        "total_games": len(df),
-        # 第6章：基础描述性分析
-        "market_scale": analyze_market_scale(df),
-        "genres": analyze_genres(df),
-        "prices": analyze_prices(df),
-        "discounts": analyze_discounts(df),
-        "developers": analyze_developers(df),
-        "publishers": analyze_publishers(df),
-        "platforms": analyze_platforms(df),
-        # 第7章：多维度关联分析
-        "genre_price": analyze_genre_price(df),
-        "genre_discount": analyze_genre_discount(df),
-        "genre_platform": analyze_genre_platform(df),
-        "genre_year": analyze_genre_year(df),
-        "genre_matrix": analyze_genre_genre_matrix(df)
-    }
+    if quiet:
+        # 静默模式：拦截内部10+个分析函数的冗长表格输出
+        sys.stdout = io.StringIO()
 
-    save_analysis_json(summary)
+    try:
+        df = load_clean_data()
+        if df is None:
+            return
+
+        summary = {
+            "total_games": len(df),
+            # 第6章：基础描述性分析
+            "market_scale": analyze_market_scale(df),
+            "genres": analyze_genres(df),
+            "prices": analyze_prices(df),
+            "discounts": analyze_discounts(df),
+            "developers": analyze_developers(df),
+            "publishers": analyze_publishers(df),
+            "platforms": analyze_platforms(df),
+            # 第7章：多维度关联分析
+            "genre_price": analyze_genre_price(df),
+            "genre_discount": analyze_genre_discount(df),
+            "genre_platform": analyze_genre_platform(df),
+            "genre_year": analyze_genre_year(df),
+            "genre_matrix": analyze_genre_genre_matrix(df),
+            # 第8章：数字游戏经济学与商业产值深度分析 (5大商业维度)
+            "commercial_genre_revenue": analyze_genre_revenue(df),
+            "commercial_pareto": analyze_pareto_distribution(df),
+            "commercial_price_elasticity": analyze_price_elasticity(df),
+            "commercial_review_sales": analyze_review_sales_correlation(df),
+            "commercial_publisher_tiers": analyze_publisher_tiers(df),
+        }
+
+        save_analysis_json(summary)
+    finally:
+        if quiet:
+            sys.stdout = old_stdout
+            print(f"[成功] 统计分析摘要计算完成，已更新 {OUTPUT_JSON} (覆盖 {len(df)} 款游戏)")
 
 
 if __name__ == "__main__":

@@ -202,6 +202,133 @@ def generate_static_charts(summary, df):
         plt.close(fig)
         print("  - 已生成 fig6_genre_cooccurrence_heatmap.png (共现热力图)")
 
+    # 8.7 商业维度一：流派商业产值矩阵 (总流水 vs 单作中位数流水)
+    comm_genres = summary.get("commercial_genre_revenue", [])[:10]
+    if comm_genres:
+        g_names = [item["genre"] for item in comm_genres]
+        tot_revs = [item["total_revenue"] / 10000 for item in comm_genres]
+        med_revs = [item["median_revenue"] / 10000 for item in comm_genres]
+
+        fig, ax1 = plt.subplots(figsize=(10, 5.2), dpi=200)
+        x = range(len(g_names))
+        ax1.bar(x, tot_revs, width=0.45, color="#10b981", alpha=0.85, label="流派预估总流水 (万元)")
+        ax1.set_xticks(list(x))
+        ax1.set_xticklabels(g_names, rotation=25, ha="right", fontsize=10)
+        ax1.set_ylabel("流派总流水 (万元)", fontsize=11, color="#059669")
+
+        ax2 = ax1.twinx()
+        ax2.plot(x, med_revs, marker="o", color="#f59e0b", linewidth=2.5, label="单作中位数流水 (万元)")
+        ax2.set_ylabel("单作中位数流水 (万元)", fontsize=11, color="#d97706")
+
+        ax1.set_title("Steam 细分流派商业总产值与中位数流水对比 (8.7 双轴图)", fontsize=13, fontweight="bold", pad=12)
+        ax1.grid(axis="y", linestyle="--", alpha=0.4)
+        plt.tight_layout()
+        fig.savefig(os.path.join(CHARTS_DIR, "fig7_commercial_genre_revenue.png"))
+        plt.close(fig)
+        print("  - 已生成 fig7_commercial_genre_revenue.png (流派商业产值矩阵)")
+
+    # 8.8 商业维度二：市场二八定律与头部垄断格局
+    comm_pareto = summary.get("commercial_pareto", {})
+    tiers = comm_pareto.get("concentration_tiers", [])
+    if tiers:
+        t_labels = [f"{t['tier']}\n({t['count']}款)" for t in tiers]
+        shares = [t["revenue_share"] for t in tiers]
+        gini = comm_pareto.get("gini_coefficient", 0.0)
+
+        fig, ax = plt.subplots(figsize=(8.5, 4.8), dpi=200)
+        bars = ax.bar(t_labels, shares, color="#ec4899", width=0.45)
+        ax.plot(range(len(t_labels)), shares, marker="s", color="#eab308", linewidth=2.2, label="累计流水集中度趋势")
+        for bar in bars:
+            h = bar.get_height()
+            ax.annotate(f"{h:.1f}%", (bar.get_x() + bar.get_width() / 2, h), textcoords="offset points", xytext=(0, 6), ha="center", fontsize=9.5, fontweight="bold")
+        ax.set_ylim(0, 112)
+        ax.set_ylabel("占全平台总流水比例 (%)", fontsize=11)
+        ax.set_title(f"Steam 市场二八定律与头部垄断格局 (基尼系数 Gini={gini:.4f})", fontsize=13, fontweight="bold", pad=12)
+        ax.grid(axis="y", linestyle="--", alpha=0.5)
+        ax.legend()
+        plt.tight_layout()
+        fig.savefig(os.path.join(CHARTS_DIR, "fig8_commercial_pareto.png"))
+        plt.close(fig)
+        print("  - 已生成 fig8_commercial_pareto.png (二八定律与长尾垄断图)")
+
+    # 8.9 商业维度三：价格—销量弹性与黄金定价区间
+    comm_elast = summary.get("commercial_price_elasticity", [])
+    if comm_elast:
+        p_labels = [item["tier_label"].split(" ")[0] for item in comm_elast]
+        tot_rev_w = [item["total_revenue"] / 10000 for item in comm_elast]
+        avg_sales = [item["avg_sales"] for item in comm_elast]
+
+        fig, ax1 = plt.subplots(figsize=(9.5, 5), dpi=200)
+        x = range(len(p_labels))
+        ax1.bar(x, tot_rev_w, width=0.42, color="#f59e0b", alpha=0.85, label="区间总流水 (万元)")
+        ax1.set_xticks(list(x))
+        ax1.set_xticklabels([item["tier_label"] for item in comm_elast], rotation=20, ha="right", fontsize=9.5)
+        ax1.set_ylabel("区间总预估流水 (万元)", fontsize=11, color="#d97706")
+
+        ax2 = ax1.twinx()
+        ax2.plot(x, avg_sales, marker="o", color="#0284c7", linewidth=2.5, label="平均单款销量 (份)")
+        ax2.set_ylabel("平均单款销量 (份)", fontsize=11, color="#0284c7")
+
+        ax1.set_title("Steam 价格—销量弹性与黄金定价带测算 (8.9 双轴图)", fontsize=13, fontweight="bold", pad=12)
+        ax1.grid(axis="y", linestyle="--", alpha=0.4)
+        plt.tight_layout()
+        fig.savefig(os.path.join(CHARTS_DIR, "fig9_commercial_price_elasticity.png"))
+        plt.close(fig)
+        print("  - 已生成 fig9_commercial_price_elasticity.png (价格弹性与黄金定价带)")
+
+    # 8.10 商业维度四：口碑受众与销量表现相关性
+    comm_rev_sales = summary.get("commercial_review_sales", {})
+    s_tiers = comm_rev_sales.get("sentiment_tiers", [])
+    if s_tiers:
+        s_labels = [item["tier"] for item in s_tiers]
+        s_avg = [item["avg_sales"] for item in s_tiers]
+        s_med = [item["median_sales"] for item in s_tiers]
+
+        fig, ax1 = plt.subplots(figsize=(9, 4.8), dpi=200)
+        x = range(len(s_labels))
+        ax1.bar(x, s_avg, width=0.42, color="#6366f1", alpha=0.85, label="平均预估销量 (份)")
+        ax1.set_xticks(list(x))
+        ax1.set_xticklabels(s_labels, rotation=15, ha="right", fontsize=9.5)
+        ax1.set_ylabel("平均预估销量 (份)", fontsize=11, color="#4f46e5")
+
+        ax2 = ax1.twinx()
+        ax2.plot(x, s_med, marker="D", color="#10b981", linewidth=2.2, label="中位数销量 (份)")
+        ax2.set_ylabel("中位数销量 (份)", fontsize=11, color="#059669")
+
+        ax1.set_title("Steam 玩家口碑梯度与商业销量表现关联图 (8.10)", fontsize=13, fontweight="bold", pad=12)
+        ax1.grid(axis="y", linestyle="--", alpha=0.4)
+        plt.tight_layout()
+        fig.savefig(os.path.join(CHARTS_DIR, "fig10_commercial_review_sales.png"))
+        plt.close(fig)
+        print("  - 已生成 fig10_commercial_review_sales.png (口碑与销量相关性图)")
+
+    # 8.11 商业维度五：研发与发行生态图鉴 (自主发行 vs 商业发行)
+    comm_pub = summary.get("commercial_publisher_tiers", {}).get("publishing_mode_comparison", {})
+    if comm_pub:
+        s_data = comm_pub.get("self_published", {})
+        c_data = comm_pub.get("commercial_published", {})
+        modes = [f"独立自发行\n({s_data.get('count', 0)}款)", f"商业发行商代理\n({c_data.get('count', 0)}款)"]
+        med_rev_w = [s_data.get("median_revenue", 0) / 10000, c_data.get("median_revenue", 0) / 10000]
+        hit_rates = [s_data.get("hit_rate_pct", 0), c_data.get("hit_rate_pct", 0)]
+
+        fig, ax1 = plt.subplots(figsize=(7.5, 4.6), dpi=200)
+        x = [0, 1]
+        ax1.bar([i - 0.16 for i in x], med_rev_w, width=0.3, color="#0ea5e9", label="中位数生存线流水 (万元)")
+        ax1.set_xticks(x)
+        ax1.set_xticklabels(modes, fontsize=10.5, fontweight="bold")
+        ax1.set_ylabel("中位数流水 (万元)", fontsize=11, color="#0284c7")
+
+        ax2 = ax1.twinx()
+        ax2.bar([i + 0.16 for i in x], hit_rates, width=0.3, color="#f59e0b", label="爆款诞生率 (% 销量≥5万)")
+        ax2.set_ylabel("爆款诞生率 (%)", fontsize=11, color="#d97706")
+
+        ax1.set_title("独立自主发行 vs 第三方商业发行生存表现对比 (8.11)", fontsize=13, fontweight="bold", pad=12)
+        ax1.grid(axis="y", linestyle="--", alpha=0.4)
+        plt.tight_layout()
+        fig.savefig(os.path.join(CHARTS_DIR, "fig11_commercial_publisher_tiers.png"))
+        plt.close(fig)
+        print("  - 已生成 fig11_commercial_publisher_tiers.png (发行模式对比图)")
+
 
 # ========================================================
 # 2. 生成交互式 ECharts 仪表盘网页 (包含 8.1 ~ 8.6 所有图表)

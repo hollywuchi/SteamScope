@@ -4,6 +4,12 @@ import datetime
 import pandas as pd
 
 
+import sys
+
+# 解决 Windows 控制台打印特殊字符编码异常问题
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(errors="replace")
+
 # =========================
 # 文件路径配置
 # =========================
@@ -148,6 +154,13 @@ def convert_types(df):
     # 是否免费
     if "is_free" in df.columns:
         df["is_free"] = df["is_free"].map(to_bool)
+
+    # 评论字段数值转换
+    for col in ["total_reviews", "total_positive", "total_negative"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
+        else:
+            df[col] = 0
 
     # Metacritic 评分（若以后需要可启用）
     # if "metacritic_score" in df.columns:
@@ -365,6 +378,55 @@ def remove_invalid_data(df):
 
 
 # =========================
+# 4.8 评论治理与 Boxleiter 销量模型测算
+# =========================
+
+def calculate_sales_metrics(df):
+    """
+    基于数字游戏经济学公认的 Boxleiter 评论乘数模型构建销量与流水衍生指标：
+    1. 评论数据清洗与纠偏：确保非负，好评数与差评数逻辑闭环
+    2. 计算好评率 positive_ratio (%)
+    3. 测算预估销量 estimated_sales：
+       - 付费游戏乘数 M = 30（Jake Birkett / VGInsights 中位数经验值）
+       - 免费游戏乘数 M = 60（免费玩家评论转化率通常约为付费玩家的一半）
+    4. 测算预估总流水 estimated_revenue（CNY）：
+       - 免费游戏基础销售流水计 0
+       - 付费游戏按折后实际售价 final_price 测算商业现金流
+    """
+    # 1. 确保评论字段均为非负整数
+    for col in ["total_reviews", "total_positive", "total_negative"]:
+        if col not in df.columns:
+            df[col] = 0
+        else:
+            df[col] = df[col].fillna(0).clip(lower=0).astype(int)
+
+    # 2. 纠偏：若 total_reviews 小于好评+差评之和，则按两者之和校准
+    sum_reviews = df["total_positive"] + df["total_negative"]
+    df["total_reviews"] = df["total_reviews"].clip(lower=sum_reviews)
+
+    # 3. 计算好评率 positive_ratio (0.0% ~ 100.0%)
+    df["positive_ratio"] = 0.0
+    has_reviews = df["total_reviews"] > 0
+    df.loc[has_reviews, "positive_ratio"] = (
+        (df.loc[has_reviews, "total_positive"] / df.loc[has_reviews, "total_reviews"]) * 100
+    ).round(2)
+
+    # 4. Boxleiter 评论乘数估算销量 (份)
+    # 付费游戏 M=30，免费游戏 M=60
+    multiplier = df["is_free"].apply(lambda is_free: 60 if is_free else 30)
+    df["estimated_sales"] = (df["total_reviews"] * multiplier).astype(int)
+
+    # 5. 测算折后预估商业流水 (CNY)
+    df["estimated_revenue"] = 0.0
+    paid_mask = (~df["is_free"]) & (df["final_price"] > 0)
+    df.loc[paid_mask, "estimated_revenue"] = (
+        df.loc[paid_mask, "estimated_sales"] * df.loc[paid_mask, "final_price"]
+    ).round(2)
+
+    return df
+
+
+# =========================
 # 调整字段顺序 (严格排除 tags 与 release_year)
 # =========================
 
@@ -385,6 +447,12 @@ def reorder_columns(df):
         "final_price",
         "discount_percent",
         "currency",
+        "total_reviews",
+        "total_positive",
+        "total_negative",
+        "positive_ratio",
+        "estimated_sales",
+        "estimated_revenue",
     ]
 
     columns = [
@@ -455,10 +523,13 @@ def main():
     # 10. 删除明显无效数据
     df = remove_invalid_data(df)
 
-    # 11. 调整字段顺序（确保无 tags、无 release_year）
+    # 11. 评论治理与 Boxleiter 销量与流水建模
+    df = calculate_sales_metrics(df)
+
+    # 12. 调整字段顺序（确保无 tags、无 release_year，包含销量与流水字段）
     df = reorder_columns(df)
 
-    # 12. 保存清洗后数据
+    # 13. 保存清洗后数据
     save_data(df)
 
 

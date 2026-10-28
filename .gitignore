@@ -85,3 +85,7 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 要求.md
+
+
+# 为了防止反重力读取过多的无用文件拖慢速度而做出的尝试
+.git

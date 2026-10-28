@@ -20,12 +20,17 @@ if hasattr(sys.stdout, "reconfigure"):
 
 load_dotenv()
 
+API_KEY = os.getenv("STEAM_API_KEY")
+
 APPID_FILE = "data/appids_recent.json"
 STATE_FILE = "data/details_recent_state.json"
 CSV_FILE = "data/steam_games_recent.csv"
 
 # 0 = 不限制
-MAX_DETAILS = int(os.getenv("MAX_DETAILS", "0"))
+if len(sys.argv) > 1 and sys.argv[1].isdigit():
+    MAX_DETAILS = int(sys.argv[1])
+else:
+    MAX_DETAILS = int(os.getenv("MAX_DETAILS", "0"))
 
 # 每个请求之间的间隔（秒），所有线程共用这个节奏
 # Steam 大约只允许每秒 1~2 个请求，调太小会被限流
@@ -58,6 +63,7 @@ RETRY_WAIT = 5
 PROGRESS_EVERY = 500
 
 DETAIL_URL = "https://store.steampowered.com/api/appdetails"
+REVIEW_URL = "https://api.steampowered.com/IUserReviewsService/GetAppReviews/v1/"
 
 
 # =========================
@@ -163,6 +169,9 @@ CSV_FIELDS = [
     "final_price",
     "discount_percent",
     "currency",
+    "total_reviews",
+    "total_positive",
+    "total_negative",
     # "metacritic_score",
 ]
 
@@ -247,22 +256,40 @@ def load_done_appids():
 
 def init_csv():
 
-    if os.path.exists(CSV_FILE):
+    if not os.path.exists(CSV_FILE):
+        with open(
+            CSV_FILE,
+            "w",
+            newline="",
+            encoding="utf-8-sig"
+        ) as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=CSV_FIELDS
+            )
+            writer.writeheader()
         return
 
-    with open(
-        CSV_FILE,
-        "w",
-        newline="",
-        encoding="utf-8-sig"
-    ) as f:
+    # 检查现有文件表头，若缺少评论字段则平滑升级表头
+    with open(CSV_FILE, "r", newline="", encoding="utf-8-sig") as f:
+        reader = csv.reader(f)
+        header = next(reader, None)
 
-        writer = csv.DictWriter(
-            f,
-            fieldnames=CSV_FIELDS
-        )
-
-        writer.writeheader()
+    if header and "total_reviews" not in header:
+        print(f"[提示] 检测到现有 CSV ({CSV_FILE}) 缺少评论字段，正在自动升级表头...")
+        rows = []
+        with open(CSV_FILE, "r", newline="", encoding="utf-8-sig") as f:
+            dict_reader = csv.DictReader(f)
+            for row in dict_reader:
+                row.setdefault("total_reviews", 0)
+                row.setdefault("total_positive", 0)
+                row.setdefault("total_negative", 0)
+                rows.append(row)
+        with open(CSV_FILE, "w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+            writer.writeheader()
+            writer.writerows(rows)
+        print(f"[提示] 现有 CSV 表头升级完成，已兼容保留 {len(rows)} 条历史记录。")
 
 
 # =========================
@@ -424,10 +451,77 @@ def get_detail(appid):
 
 
 # =========================
+# 获取评论统计 (Boxleiter 模型数据源)
+# =========================
+
+def get_review_summary(appid):
+    """
+    获取游戏的评论统计数据：总评论数、好评数、差评数。
+    接口: https://api.steampowered.com/IUserReviewsService/GetAppReviews/v1/
+    """
+    attempt = 0
+    rate_retry = 0
+
+    while attempt < RETRY_TIMES:
+
+        pace()
+
+        try:
+            params = {
+                "appid": appid,
+                "language": "all",
+                "purchase_type": "all",
+                "num_per_page": 0,
+            }
+            if API_KEY:
+                params["key"] = API_KEY
+
+            response = requests.get(
+                REVIEW_URL,
+                params=params,
+                timeout=15
+            )
+
+            if response.status_code == 429:
+
+                rate_retry += 1
+
+                if rate_retry > RATE_RETRY:
+                    break
+
+                cooldown()
+
+                continue
+
+            response.raise_for_status()
+
+            summary = response.json().get("response", {}).get("query_summary", {})
+
+            relax()
+
+            return {
+                "total_reviews": int(summary.get("total_reviews", 0) or 0),
+                "total_positive": int(summary.get("total_positive", 0) or 0),
+                "total_negative": int(summary.get("total_negative", 0) or 0),
+            }
+
+        except Exception as e:
+
+            attempt += 1
+
+            if attempt < RETRY_TIMES:
+                time.sleep(RETRY_WAIT)
+
+    return {"total_reviews": 0, "total_positive": 0, "total_negative": 0}
+
+
+# =========================
 # 数据处理
 # =========================
 
-def parse_game(data):
+def parse_game(data, reviews=None):
+
+    reviews = reviews or {}
 
     # 开发商
     developers = data.get("developers", [])
@@ -537,6 +631,12 @@ def parse_game(data):
         "discount_percent": discount_percent,
 
         "currency": currency,
+
+        "total_reviews": reviews.get("total_reviews", 0),
+
+        "total_positive": reviews.get("total_positive", 0),
+
+        "total_negative": reviews.get("total_negative", 0),
 
         # "metacritic_score": metacritic_score
     }
@@ -693,14 +793,15 @@ def main():
 
                         if status != "ok":
                             skipped += 1
-                            print(f"AppID {appid}：获取失败")
+                            print(f"AppID {appid}：网络请求失败")
                             continue
 
                         name = data.get("name") or f"AppID {appid}"
 
                         if data.get("type") != "game":
                             skipped += 1
-                            print(f"{name}：获取失败")
+                            g_type = data.get("type", "未知")
+                            print(f"{name}：跳过 (非纯游戏/类型: {g_type})")
                             continue
 
                         release_date = parse_release_date(
@@ -709,10 +810,17 @@ def main():
 
                         if not in_date_range(data, release_date):
                             skipped += 1
-                            print(f"{name}：获取失败")
+                            raw_date = data.get("release_date", {}).get("date", "未知")
+                            if data.get("release_date", {}).get("coming_soon"):
+                                print(f"{name}：跳过 (未发售/即将推出)")
+                            else:
+                                print(f"{name}：跳过 (发售日期 {raw_date} 不在近3年范围)")
                             continue
 
-                        game = parse_game(data)
+                        # 仅对已确认符合条件的纯游戏拉取评论数据，节约网络请求
+                        reviews = get_review_summary(appid)
+
+                        game = parse_game(data, reviews)
 
                         save_game(game)
 
@@ -721,10 +829,13 @@ def main():
                         kept += 1
                         last_name = (
                             f"{game['name']}"
-                            f"（{game['release_date']}）"
+                            f"（{game['release_date']} | 评论:{game['total_reviews']}）"
                         )
 
-                        print(f"{game['name']}：获取成功")
+                        print(
+                            f"{game['name']}：获取成功 "
+                            f"(总评: {game['total_reviews']}, 好评: {game['total_positive']})"
+                        )
 
                 processed += len(chunk)
                 index += len(chunk)
