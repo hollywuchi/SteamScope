@@ -9,23 +9,8 @@ export default {
 
     // 1. 拦截所有 /api/* 的请求并转发给 Azure VM 后端 Flask 服务
     if (url.pathname.startsWith("/api/")) {
-      const backend = env.BACKEND_URL;
-
-      // 若后台尚未配置环境变量，给出明确的中文指引
-      if (!backend) {
-        return new Response(JSON.stringify({
-          code: 500,
-          error: "BACKEND_URL_MISSING",
-          message: "【成功解锁 Worker 模式】检测到后台尚未填入 BACKEND_URL 变量。",
-          solution: "现在 Cloudflare 后台设置中的【运行时变量和密钥】已经解锁可用！请前往添加变量名：BACKEND_URL，值：http://你的VM公网IP:5000 即可！"
-        }, null, 2), {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Access-Control-Allow-Origin": "*"
-          }
-        });
-      }
+      // 优先从环境变量获取，默认使用通过 Cloudflare 橙色云朵加密保护的后端安全域名
+      const backend = env.BACKEND_URL || "https://api.skycat.studio";
 
       const targetUrl = new URL(url.pathname + url.search, backend);
       const newHeaders = new Headers(request.headers);
