@@ -1,3 +1,0 @@
-# Cloudflare Pages API 反向代理规则
-# 将前端所有 /api/* 的请求无缝代理至后端 Flask 服务，解决跨域与 HTTPS 混合内容问题
-/api/*  https://steam.skycat.studio/api/:splat  200
