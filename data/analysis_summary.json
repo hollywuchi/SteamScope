@@ -1,0 +1,907 @@
+{
+  "total_games": 46,
+  "market_scale": [
+    {
+      "year": "2023",
+      "count": 6,
+      "ratio": 13.04
+    },
+    {
+      "year": "2024",
+      "count": 18,
+      "ratio": 39.13
+    },
+    {
+      "year": "2025",
+      "count": 13,
+      "ratio": 28.26
+    },
+    {
+      "year": "2026",
+      "count": 9,
+      "ratio": 19.57
+    }
+  ],
+  "genres": [
+    {
+      "genre": "动作",
+      "count": 25,
+      "ratio": 54.35
+    },
+    {
+      "genre": "独立",
+      "count": 24,
+      "ratio": 52.17
+    },
+    {
+      "genre": "冒险",
+      "count": 21,
+      "ratio": 45.65
+    },
+    {
+      "genre": "休闲",
+      "count": 18,
+      "ratio": 39.13
+    },
+    {
+      "genre": "角色扮演",
+      "count": 13,
+      "ratio": 28.26
+    },
+    {
+      "genre": "策略",
+      "count": 11,
+      "ratio": 23.91
+    },
+    {
+      "genre": "模拟",
+      "count": 10,
+      "ratio": 21.74
+    },
+    {
+      "genre": "免费开玩",
+      "count": 4,
+      "ratio": 8.7
+    },
+    {
+      "genre": "抢先体验",
+      "count": 3,
+      "ratio": 6.52
+    },
+    {
+      "genre": "体育",
+      "count": 3,
+      "ratio": 6.52
+    },
+    {
+      "genre": "竞速",
+      "count": 2,
+      "ratio": 4.35
+    }
+  ],
+  "prices": {
+    "free_count": 3,
+    "paid_count": 43,
+    "stats": {
+      "mean": 38.3,
+      "median": 29.0,
+      "min": 8.25,
+      "max": 198.4
+    },
+    "distribution": [
+      {
+        "range": "1~30元(轻量/小品)",
+        "count": 24,
+        "ratio": 52.17
+      },
+      {
+        "range": "31~70元(中度独立)",
+        "count": 14,
+        "ratio": 30.43
+      },
+      {
+        "range": "71~150元(高质独立)",
+        "count": 4,
+        "ratio": 8.7
+      },
+      {
+        "range": "免费",
+        "count": 3,
+        "ratio": 6.52
+      },
+      {
+        "range": "151~300元(准3A/中大型)",
+        "count": 1,
+        "ratio": 2.17
+      },
+      {
+        "range": "300元以上(3A旗舰)",
+        "count": 0,
+        "ratio": 0.0
+      }
+    ]
+  },
+  "discounts": {
+    "no_discount": 16,
+    "low_discount": 7,
+    "mid_discount": 16,
+    "high_discount": 7
+  },
+  "developers": [
+    {
+      "developer": "Playables",
+      "count": 1
+    },
+    {
+      "developer": "Dommenuss",
+      "count": 1
+    },
+    {
+      "developer": "Pikachau",
+      "count": 1
+    },
+    {
+      "developer": "Polygon Treehouse",
+      "count": 1
+    },
+    {
+      "developer": "OutsideIn Entertainment",
+      "count": 1
+    },
+    {
+      "developer": "Deep Shadows",
+      "count": 1
+    },
+    {
+      "developer": "Cyparade",
+      "count": 1
+    },
+    {
+      "developer": "Tastie Games LLC.",
+      "count": 1
+    },
+    {
+      "developer": "MicroProse Software",
+      "count": 1
+    },
+    {
+      "developer": "Piranha Games Inc.",
+      "count": 1
+    }
+  ],
+  "publishers": [
+    {
+      "publisher": "Ziggurat",
+      "count": 2
+    },
+    {
+      "publisher": "Panic",
+      "count": 1
+    },
+    {
+      "publisher": "artifact design GbR",
+      "count": 1
+    },
+    {
+      "publisher": "Whitethorn Games",
+      "count": 1
+    },
+    {
+      "publisher": "OutsideIn Entertainment",
+      "count": 1
+    },
+    {
+      "publisher": "Tastie Games LLC.",
+      "count": 1
+    },
+    {
+      "publisher": "MicroProse Software",
+      "count": 1
+    },
+    {
+      "publisher": "Piranha Games Inc.",
+      "count": 1
+    },
+    {
+      "publisher": "Untold Tales",
+      "count": 1
+    },
+    {
+      "publisher": "Ghost Creative Studio",
+      "count": 1
+    }
+  ],
+  "platforms": {
+    "windows": 46,
+    "mac": 7,
+    "linux": 7,
+    "multi_platform": 11
+  },
+  "genre_price": [
+    {
+      "genre": "角色扮演",
+      "count": 13,
+      "mean_price": 46.74,
+      "median_price": 27.3,
+      "min_price": 0.0,
+      "max_price": 198.4
+    },
+    {
+      "genre": "冒险",
+      "count": 21,
+      "mean_price": 45.81,
+      "median_price": 29.0,
+      "min_price": 0.0,
+      "max_price": 198.4
+    },
+    {
+      "genre": "动作",
+      "count": 25,
+      "mean_price": 42.36,
+      "median_price": 27.3,
+      "min_price": 8.25,
+      "max_price": 198.4
+    },
+    {
+      "genre": "模拟",
+      "count": 10,
+      "mean_price": 33.63,
+      "median_price": 35.2,
+      "min_price": 0.0,
+      "max_price": 76.0
+    },
+    {
+      "genre": "抢先体验",
+      "count": 3,
+      "mean_price": 28.42,
+      "median_price": 35.75,
+      "min_price": 11.0,
+      "max_price": 38.5
+    },
+    {
+      "genre": "策略",
+      "count": 11,
+      "mean_price": 28.05,
+      "median_price": 29.5,
+      "min_price": 0.0,
+      "max_price": 58.0
+    },
+    {
+      "genre": "独立",
+      "count": 24,
+      "mean_price": 27.46,
+      "median_price": 25.5,
+      "min_price": 0.0,
+      "max_price": 76.0
+    },
+    {
+      "genre": "体育",
+      "count": 3,
+      "mean_price": 26.33,
+      "median_price": 29.0,
+      "min_price": 13.99,
+      "max_price": 36.0
+    },
+    {
+      "genre": "竞速",
+      "count": 2,
+      "mean_price": 22.5,
+      "median_price": 22.5,
+      "min_price": 21.0,
+      "max_price": 24.0
+    },
+    {
+      "genre": "休闲",
+      "count": 18,
+      "mean_price": 20.72,
+      "median_price": 20.0,
+      "min_price": 0.0,
+      "max_price": 50.6
+    },
+    {
+      "genre": "免费开玩",
+      "count": 4,
+      "mean_price": 19.0,
+      "median_price": 0.0,
+      "min_price": 0.0,
+      "max_price": 76.0
+    }
+  ],
+  "genre_discount": [
+    {
+      "genre": "竞速",
+      "count": 2,
+      "discounted_games": 2,
+      "discount_rate": 100.0,
+      "mean_discount": 50.0
+    },
+    {
+      "genre": "角色扮演",
+      "count": 13,
+      "discounted_games": 10,
+      "discount_rate": 76.92,
+      "mean_discount": 35.38
+    },
+    {
+      "genre": "策略",
+      "count": 11,
+      "discounted_games": 8,
+      "discount_rate": 72.73,
+      "mean_discount": 39.09
+    },
+    {
+      "genre": "模拟",
+      "count": 10,
+      "discounted_games": 7,
+      "discount_rate": 70.0,
+      "mean_discount": 38.5
+    },
+    {
+      "genre": "动作",
+      "count": 25,
+      "discounted_games": 17,
+      "discount_rate": 68.0,
+      "mean_discount": 29.72
+    },
+    {
+      "genre": "体育",
+      "count": 3,
+      "discounted_games": 2,
+      "discount_rate": 66.67,
+      "mean_discount": 36.67
+    },
+    {
+      "genre": "冒险",
+      "count": 21,
+      "discounted_games": 14,
+      "discount_rate": 66.67,
+      "mean_discount": 30.86
+    },
+    {
+      "genre": "抢先体验",
+      "count": 3,
+      "discounted_games": 2,
+      "discount_rate": 66.67,
+      "mean_discount": 21.67
+    },
+    {
+      "genre": "休闲",
+      "count": 18,
+      "discounted_games": 11,
+      "discount_rate": 61.11,
+      "mean_discount": 27.94
+    },
+    {
+      "genre": "独立",
+      "count": 24,
+      "discounted_games": 12,
+      "discount_rate": 50.0,
+      "mean_discount": 23.25
+    },
+    {
+      "genre": "免费开玩",
+      "count": 4,
+      "discounted_games": 0,
+      "discount_rate": 0.0,
+      "mean_discount": 0.0
+    }
+  ],
+  "genre_platform": [
+    {
+      "genre": "抢先体验",
+      "count": 3,
+      "mac_rate": 33.33,
+      "linux_rate": 33.33
+    },
+    {
+      "genre": "模拟",
+      "count": 10,
+      "mac_rate": 30.0,
+      "linux_rate": 10.0
+    },
+    {
+      "genre": "策略",
+      "count": 11,
+      "mac_rate": 27.27,
+      "linux_rate": 18.18
+    },
+    {
+      "genre": "独立",
+      "count": 24,
+      "mac_rate": 20.83,
+      "linux_rate": 16.67
+    },
+    {
+      "genre": "角色扮演",
+      "count": 13,
+      "mac_rate": 15.38,
+      "linux_rate": 15.38
+    },
+    {
+      "genre": "休闲",
+      "count": 18,
+      "mac_rate": 11.11,
+      "linux_rate": 16.67
+    },
+    {
+      "genre": "冒险",
+      "count": 21,
+      "mac_rate": 9.52,
+      "linux_rate": 4.76
+    },
+    {
+      "genre": "动作",
+      "count": 25,
+      "mac_rate": 8.0,
+      "linux_rate": 16.0
+    },
+    {
+      "genre": "体育",
+      "count": 3,
+      "mac_rate": 0.0,
+      "linux_rate": 0.0
+    },
+    {
+      "genre": "免费开玩",
+      "count": 4,
+      "mac_rate": 0.0,
+      "linux_rate": 0.0
+    },
+    {
+      "genre": "竞速",
+      "count": 2,
+      "mac_rate": 0.0,
+      "linux_rate": 0.0
+    }
+  ],
+  "genre_year": {
+    "动作": {
+      "2023": 3,
+      "2024": 11,
+      "2025": 5,
+      "2026": 6
+    },
+    "独立": {
+      "2023": 3,
+      "2024": 9,
+      "2025": 8,
+      "2026": 4
+    },
+    "冒险": {
+      "2023": 2,
+      "2024": 7,
+      "2025": 8,
+      "2026": 4
+    },
+    "休闲": {
+      "2023": 3,
+      "2024": 6,
+      "2025": 4,
+      "2026": 5
+    },
+    "角色扮演": {
+      "2023": 1,
+      "2024": 7,
+      "2025": 2,
+      "2026": 3
+    },
+    "策略": {
+      "2023": 2,
+      "2024": 4,
+      "2025": 2,
+      "2026": 3
+    },
+    "模拟": {
+      "2023": 2,
+      "2024": 6,
+      "2025": 0,
+      "2026": 2
+    },
+    "免费开玩": {
+      "2023": 0,
+      "2024": 1,
+      "2025": 1,
+      "2026": 2
+    }
+  },
+  "genre_matrix": {
+    "top_genres": [
+      "动作",
+      "独立",
+      "冒险",
+      "休闲",
+      "角色扮演",
+      "策略",
+      "模拟",
+      "免费开玩"
+    ],
+    "matrix": {
+      "动作": {
+        "动作": 25,
+        "独立": 11,
+        "冒险": 14,
+        "休闲": 7,
+        "角色扮演": 7,
+        "策略": 5,
+        "模拟": 4,
+        "免费开玩": 1
+      },
+      "独立": {
+        "动作": 11,
+        "独立": 24,
+        "冒险": 13,
+        "休闲": 13,
+        "角色扮演": 5,
+        "策略": 5,
+        "模拟": 7,
+        "免费开玩": 3
+      },
+      "冒险": {
+        "动作": 14,
+        "独立": 13,
+        "冒险": 21,
+        "休闲": 7,
+        "角色扮演": 8,
+        "策略": 2,
+        "模拟": 3,
+        "免费开玩": 3
+      },
+      "休闲": {
+        "动作": 7,
+        "独立": 13,
+        "冒险": 7,
+        "休闲": 18,
+        "角色扮演": 2,
+        "策略": 3,
+        "模拟": 3,
+        "免费开玩": 2
+      },
+      "角色扮演": {
+        "动作": 7,
+        "独立": 5,
+        "冒险": 8,
+        "休闲": 2,
+        "角色扮演": 13,
+        "策略": 2,
+        "模拟": 3,
+        "免费开玩": 1
+      },
+      "策略": {
+        "动作": 5,
+        "独立": 5,
+        "冒险": 2,
+        "休闲": 3,
+        "角色扮演": 2,
+        "策略": 11,
+        "模拟": 5,
+        "免费开玩": 1
+      },
+      "模拟": {
+        "动作": 4,
+        "独立": 7,
+        "冒险": 3,
+        "休闲": 3,
+        "角色扮演": 3,
+        "策略": 5,
+        "模拟": 10,
+        "免费开玩": 2
+      },
+      "免费开玩": {
+        "动作": 1,
+        "独立": 3,
+        "冒险": 3,
+        "休闲": 2,
+        "角色扮演": 1,
+        "策略": 1,
+        "模拟": 2,
+        "免费开玩": 4
+      }
+    }
+  },
+  "commercial_genre_revenue": [
+    {
+      "genre": "动作",
+      "game_count": 25,
+      "total_revenue": 351930561.3,
+      "total_sales": 2872680,
+      "median_revenue": 33480.0,
+      "avg_revenue": 14077222.45
+    },
+    {
+      "genre": "冒险",
+      "game_count": 21,
+      "total_revenue": 342570660.3,
+      "total_sales": 2689170,
+      "median_revenue": 44460.0,
+      "avg_revenue": 16312888.59
+    },
+    {
+      "genre": "角色扮演",
+      "game_count": 13,
+      "total_revenue": 39105714.3,
+      "total_sales": 390540,
+      "median_revenue": 349218.0,
+      "avg_revenue": 3008131.87
+    },
+    {
+      "genre": "模拟",
+      "game_count": 10,
+      "total_revenue": 14354251.8,
+      "total_sales": 327120,
+      "median_revenue": 286789.5,
+      "avg_revenue": 1435425.18
+    },
+    {
+      "genre": "策略",
+      "game_count": 11,
+      "total_revenue": 4196052.0,
+      "total_sales": 130560,
+      "median_revenue": 35400.0,
+      "avg_revenue": 381459.27
+    },
+    {
+      "genre": "独立",
+      "game_count": 24,
+      "total_revenue": 3895741.8,
+      "total_sales": 132300,
+      "median_revenue": 25560.0,
+      "avg_revenue": 162322.57
+    },
+    {
+      "genre": "休闲",
+      "game_count": 18,
+      "total_revenue": 2954869.8,
+      "total_sales": 99570,
+      "median_revenue": 13611.15,
+      "avg_revenue": 164159.43
+    },
+    {
+      "genre": "抢先体验",
+      "game_count": 3,
+      "total_revenue": 1594642.5,
+      "total_sales": 43830,
+      "median_revenue": 398475.0,
+      "avg_revenue": 531547.5
+    },
+    {
+      "genre": "竞速",
+      "game_count": 2,
+      "total_revenue": 81900.0,
+      "total_sales": 3900,
+      "median_revenue": 40950.0,
+      "avg_revenue": 40950.0
+    },
+    {
+      "genre": "体育",
+      "game_count": 3,
+      "total_revenue": 78558.3,
+      "total_sales": 3090,
+      "median_revenue": 28710.0,
+      "avg_revenue": 26186.1
+    },
+    {
+      "genre": "免费开玩",
+      "game_count": 4,
+      "total_revenue": 45600.0,
+      "total_sales": 600,
+      "median_revenue": 0.0,
+      "avg_revenue": 11400.0
+    }
+  ],
+  "commercial_pareto": {
+    "gini_coefficient": 0.9605,
+    "concentration_tiers": [
+      {
+        "tier": "Top 1%",
+        "count": 1,
+        "revenue_share": 85.39
+      },
+      {
+        "tier": "Top 5%",
+        "count": 2,
+        "revenue_share": 92.54
+      },
+      {
+        "tier": "Top 10%",
+        "count": 4,
+        "revenue_share": 97.08
+      },
+      {
+        "tier": "Top 20%",
+        "count": 9,
+        "revenue_share": 99.23
+      },
+      {
+        "tier": "Top 50%",
+        "count": 23,
+        "revenue_share": 99.92
+      }
+    ],
+    "quantiles": {
+      "p25": 6763.5,
+      "median": 38052.0,
+      "p75": 345651.0,
+      "p90": 2292343.5,
+      "max": 305756451.0
+    }
+  },
+  "commercial_price_elasticity": [
+    {
+      "tier_label": "免费 (0元)",
+      "count": 3,
+      "avg_sales": 0,
+      "median_sales": 0,
+      "total_revenue": 0.0,
+      "avg_revenue": 0.0
+    },
+    {
+      "tier_label": "低价探索区 (1~20元)",
+      "count": 12,
+      "avg_sales": 4467,
+      "median_sales": 1125,
+      "total_revenue": 762582.3,
+      "avg_revenue": 63548.53
+    },
+    {
+      "tier_label": "标准独立区 (21~45元)",
+      "count": 21,
+      "avg_sales": 10368,
+      "median_sales": 1200,
+      "total_revenue": 6867166.5,
+      "avg_revenue": 327007.93
+    },
+    {
+      "tier_label": "中端进阶区 (46~80元)",
+      "count": 7,
+      "avg_sales": 38824,
+      "median_sales": 2820,
+      "total_revenue": 16637166.0,
+      "avg_revenue": 2376738.0
+    },
+    {
+      "tier_label": "高阶精品区 (81~150元)",
+      "count": 2,
+      "avg_sales": 1201110,
+      "median_sales": 1201110,
+      "total_revenue": 308193531.0,
+      "avg_revenue": 154096765.5
+    },
+    {
+      "tier_label": "商业3A/溢价区 (>150元)",
+      "count": 1,
+      "avg_sales": 129120,
+      "median_sales": 129120,
+      "total_revenue": 25617408.0,
+      "avg_revenue": 25617408.0
+    }
+  ],
+  "commercial_review_sales": {
+    "pearson_corr": 0.1049,
+    "spearman_corr": -0.1647,
+    "sentiment_tiers": [
+      {
+        "tier": "好评如潮 (95%~100%)",
+        "count": 11,
+        "avg_sales": 219913,
+        "median_sales": 930
+      },
+      {
+        "tier": "特别好评 (80%~94%)",
+        "count": 17,
+        "avg_sales": 16777,
+        "median_sales": 3150
+      },
+      {
+        "tier": "多半好评 (70%~79%)",
+        "count": 5,
+        "avg_sales": 43230,
+        "median_sales": 3900
+      },
+      {
+        "tier": "褒贬不一 (40%~69%)",
+        "count": 5,
+        "avg_sales": 30672,
+        "median_sales": 10350
+      },
+      {
+        "tier": "多半差评 (<40%)",
+        "count": 3,
+        "avg_sales": 230,
+        "median_sales": 60
+      }
+    ]
+  },
+  "commercial_publisher_tiers": {
+    "publishing_mode_comparison": {
+      "self_published": {
+        "count": 26,
+        "median_revenue": 25665.0,
+        "avg_revenue": 743314.22,
+        "hit_rate_pct": 7.69
+      },
+      "commercial_published": {
+        "count": 20,
+        "median_revenue": 134043.0,
+        "avg_revenue": 16937584.2,
+        "hit_rate_pct": 15.0
+      }
+    },
+    "top_publishers_by_revenue": [
+      {
+        "publisher": "Electronic Arts",
+        "game_count": 1,
+        "total_revenue": 305756451.0
+      },
+      {
+        "publisher": "Fictions",
+        "game_count": 1,
+        "total_revenue": 25617408.0
+      },
+      {
+        "publisher": "Piranha Games Inc.",
+        "game_count": 1,
+        "total_revenue": 9104400.0
+      },
+      {
+        "publisher": "Hatchery Games",
+        "game_count": 1,
+        "total_revenue": 7160256.0
+      },
+      {
+        "publisher": "Perp Games",
+        "game_count": 1,
+        "total_revenue": 2437080.0
+      },
+      {
+        "publisher": "Hooded Horse",
+        "game_count": 1,
+        "total_revenue": 2147607.0
+      },
+      {
+        "publisher": "Dear Villagers",
+        "game_count": 1,
+        "total_revenue": 1265460.0
+      },
+      {
+        "publisher": "Alex Blintsov",
+        "game_count": 1,
+        "total_revenue": 1195837.5
+      },
+      {
+        "publisher": "VI Game Forge",
+        "game_count": 1,
+        "total_revenue": 623007.0
+      },
+      {
+        "publisher": "MicroProse Software",
+        "game_count": 1,
+        "total_revenue": 398475.0
+      },
+      {
+        "publisher": "Warkus",
+        "game_count": 1,
+        "total_revenue": 389520.0
+      },
+      {
+        "publisher": "Stingbot Games",
+        "game_count": 1,
+        "total_revenue": 349218.0
+      },
+      {
+        "publisher": "Doyoyo Games",
+        "game_count": 1,
+        "total_revenue": 349218.0
+      },
+      {
+        "publisher": "Panic",
+        "game_count": 1,
+        "total_revenue": 334950.0
+      },
+      {
+        "publisher": "Ziggurat",
+        "game_count": 2,
+        "total_revenue": 207480.0
+      }
+    ]
+  }
+}

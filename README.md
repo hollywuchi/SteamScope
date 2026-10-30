@@ -1,4 +1,4 @@
-# NexusSteam // 基于 Steam 平台数据分析与可视化的游戏市场研究
+# [NexusSteam](https://steam.skycat.studio) -- 基于 Steam 平台数据分析与可视化的游戏市场研究
 
 <p align="center">
   <strong>—— 把握游戏市场的脉搏与节奏 (Steam Market Analytics & Visualization Platform)</strong>
