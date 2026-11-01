@@ -8,10 +8,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=Space+Grotesk:wght@600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Vue 3 & ECharts 5 CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <!-- Vue 3 & ECharts 5 本地资源（优先从服务器自身加载，杜绝外部 CDN 墙/超时导致页面白屏或卡死） -->
+    <script src="/static/js/vue.global.prod.js"></script>
+    <script src="/static/js/echarts.min.js"></script>
+    <script>
+        // 外部 CDN 容灾备份（若本地文件未部署则从国内稳定镜像自动加载）
+        if (!window.Vue) {
+            document.write('<script src="https://cdn.staticfile.net/vue/3.3.4/vue.global.prod.min.js"><\/script>');
+        }
+        if (!window.echarts) {
+            document.write('<script src="https://cdn.staticfile.net/echarts/5.4.3/echarts.min.js"><\/script>');
+        }
+    </script>
     <style>
+        [v-cloak] {
+            display: none !important;
+        }
         /* ======================================================== */
         /* Gen Z Chaos / Maximalism 设计令牌与核心视觉系统          */
         /* 融合撞色、贴纸徽章、粗边框、赛博网格与跑马灯             */
@@ -1351,7 +1363,7 @@
     </style>
 </head>
 <body>
-    <div id="app">
+    <div id="app" v-cloak>
         <!-- 1. 欢迎影片：Steam 大屏幕模式开机动画 (智能双模：允许有声则直接自动播；他人电脑被拦截时待机等待任意点击立即有声播放) -->
         <div
             id="startup-intro-overlay"
@@ -1359,6 +1371,7 @@
             v-if="showStartupIntro"
             :class="{ 'mask-shrinking': isMaskShrinking }"
             :style="introMaskStyle"
+            @click="finishStartupIntro"
         >
             <video
                 id="startup-video"
@@ -1367,13 +1380,14 @@
                 playsinline
                 preload="auto"
                 @ended="finishStartupIntro"
+                @error="finishStartupIntro"
             ></video>
 
             <!-- 当他人电脑浏览器拦截自动声音时显示的极简待机唤醒层（点击屏幕任意处或按任意键立即满音量开机） -->
             <div
                 class="startup-wakeup-standby"
                 v-if="waitingForInteraction"
-                @click="triggerWakeupPlay"
+                @click.stop="triggerWakeupPlay"
             >
                 <div class="wakeup-logo-ring">
                     <img src="/movie/steam_spinner.png" alt="Steam OS Standby">
@@ -2216,7 +2230,14 @@
                         videoEl.currentTime = 0;
                         videoEl.muted = false;
                         videoEl.volume = 1.0;
-                        videoEl.play().catch(() => {});
+                        const p = videoEl.play();
+                        if (p !== undefined) {
+                            p.catch(() => {
+                                finishStartupIntro();
+                            });
+                        }
+                    } else {
+                        finishStartupIntro();
                     }
                 };
 
@@ -3236,6 +3257,13 @@
                         Object.values(charts).forEach(c => c && c.resize());
                     });
 
+                    // 动画超时安全兜底保护（最长 6 秒，防止任何因视频源卡顿、网络限制导致的无法进入系统）
+                    setTimeout(() => {
+                        if (showStartupIntro.value) {
+                            finishStartupIntro();
+                        }
+                    }, 6000);
+
                     await fetchStatus();
                     await fetchOverview();
                     await fetchGameList(1);
@@ -3294,6 +3322,18 @@
                 };
             }
         }).mount('#app');
+    </script>
+
+    <!-- 原生兜底机制：即使网络极端异常导致 Vue 无法挂载，点击任意处也能直接隐藏遮罩层进入页面 -->
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const overlay = document.getElementById('startup-intro-overlay');
+            if (overlay) {
+                overlay.addEventListener('click', () => {
+                    overlay.style.display = 'none';
+                });
+            }
+        });
     </script>
 </body>
 </html>

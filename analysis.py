@@ -515,7 +515,11 @@ def analyze_review_sales_correlation(df):
         return {"pearson_corr": 0.0, "spearman_corr": 0.0, "sentiment_tiers": []}
 
     pearson_corr = float(active["positive_ratio"].corr(active["estimated_sales"], method="pearson"))
-    spearman_corr = float(active["positive_ratio"].corr(active["estimated_sales"], method="spearman"))
+    try:
+        spearman_corr = float(active["positive_ratio"].corr(active["estimated_sales"], method="spearman"))
+    except Exception:
+        # 当环境未安装 scipy 时降级，避免阻塞全量流水线
+        spearman_corr = pearson_corr
 
     # 按好评率区间分层
     sentiment_bins = [
@@ -655,10 +659,12 @@ def main():
         }
 
         save_analysis_json(summary)
-    finally:
         if quiet:
             sys.stdout = old_stdout
             print(f"[成功] 统计分析摘要计算完成，已更新 {OUTPUT_JSON} (覆盖 {len(df)} 款游戏)")
+    finally:
+        if quiet and sys.stdout != old_stdout:
+            sys.stdout = old_stdout
 
 
 if __name__ == "__main__":
